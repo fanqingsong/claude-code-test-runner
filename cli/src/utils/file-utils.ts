@@ -1,15 +1,23 @@
 import { glob } from "glob";
 import { promises as fs } from "fs";
-import { resolve, dirname } from "path";
+import { dirname } from "path";
 
 /**
- * Find files matching glob patterns
+ * Find files matching glob patterns.
+ * @param patterns - Array of glob patterns to match files.
+ * @param basePath - Base directory to search from (defaults to ".").
+ * @param excludePatterns - Array of glob patterns to exclude.
+ * @returns Sorted array of matching file paths.
  */
 export async function findFiles(
   patterns: string[],
   basePath: string = ".",
   excludePatterns: string[] = []
 ): Promise<string[]> {
+  if (!patterns || patterns.length === 0) {
+    return [];
+  }
+
   const allFiles: string[] = [];
 
   for (const pattern of patterns) {
@@ -27,7 +35,8 @@ export async function findFiles(
 }
 
 /**
- * Ensure directory exists, create if not
+ * Ensure directory exists, create if not.
+ * @param dirPath - Directory path to ensure exists.
  */
 export async function ensureDir(dirPath: string): Promise<void> {
   try {
@@ -41,20 +50,41 @@ export async function ensureDir(dirPath: string): Promise<void> {
 }
 
 /**
- * Read JSON file safely
+ * Read JSON file safely.
+ * @template T - Type of parsed JSON content.
+ * @param filePath - Path to JSON file to read.
+ * @returns Parsed JSON content.
+ * @throws Error if file not found or JSON is invalid.
  */
 export async function readJsonFile<T>(filePath: string): Promise<T> {
-  const content = await fs.readFile(filePath, "utf-8");
-  return JSON.parse(content) as T;
+  try {
+    const content = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(content) as T;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error(`Invalid JSON in file: ${filePath} - ${error.message}`);
+    }
+    throw error;
+  }
 }
 
 /**
- * Write file ensuring directory exists
+ * Write file ensuring directory exists.
+ * @param filePath - Path to file to write.
+ * @param content - Content to write to file.
+ * @throws Error if file path is empty.
  */
 export async function writeFile(
   filePath: string,
   content: string
 ): Promise<void> {
+  if (!filePath || filePath.trim().length === 0) {
+    throw new Error("File path cannot be empty");
+  }
+
   await ensureDir(dirname(filePath));
   await fs.writeFile(filePath, content, "utf-8");
 }
