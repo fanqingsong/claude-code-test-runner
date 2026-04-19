@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
 import { resolve } from "path";
 import { testCaseSchema, type TestCase } from "../types/test-case";
 import z from "zod";
@@ -33,7 +33,23 @@ const args = program.opts<CLIOptions>();
 
 // Load configuration file
 const configLoader = new ConfigLoader(args.config, args.environment);
-const config = configLoader.load();
+let config = {};
+try {
+  config = configLoader.load();
+} catch (error) {
+  logger.error(`Failed to load configuration: ${error}`);
+  logger.info("Proceeding with CLI arguments and defaults only");
+  // Continue with empty config (CLI args will provide values)
+}
+
+// Validate CLI-provided values
+if (args.maxTurns !== undefined) {
+  const maxTurns = parseInt(args.maxTurns.toString());
+  if (isNaN(maxTurns) || maxTurns < 1 || maxTurns > 100) {
+    logger.error(`maxTurns must be between 1 and 100, got: ${args.maxTurns}`);
+    process.exit(1);
+  }
+}
 
 // Merge configuration with CLI arguments (CLI args take precedence)
 const mergedConfig: {
@@ -54,7 +70,13 @@ const mergedConfig: {
   verbose: args.verbose ?? config.execution?.verbose ?? false,
   screenshots: args.screenshots ?? config.execution?.screenshots ?? false,
   maxTurns: args.maxTurns
-    ? parseInt(args.maxTurns.toString())
+    ? (() => {
+        const parsed = parseInt(args.maxTurns.toString());
+        if (isNaN(parsed) || parsed < 1 || parsed > 100) {
+          throw new Error(`maxTurns must be a number between 1 and 100, got: ${args.maxTurns}`);
+        }
+        return parsed;
+      })()
     : config.execution?.maxTurns ?? 30,
   model: args.model ?? config.claude?.model,
   testPatterns: config.tests?.patterns ?? ["**/*.json"],
@@ -67,7 +89,16 @@ if (configLoader.getRawConfig()) {
   logger.debug(`Configuration loaded from: ${args.config}`);
 }
 
-// Load test cases
+/**
+ * Loads test cases from a specified path, which can be a single file or a directory.
+ * Supports filtering by file patterns and exclusion patterns.
+ *
+ * @param testsPath - Path to the tests file or directory
+ * @param patterns - Glob patterns to match test files (e.g., ["**/*.json"])
+ * @param exclude - Glob patterns to exclude from matching (e.g., ["**/node_modules/**"])
+ * @returns Promise<TestCase[]> Array of loaded and validated test cases
+ * @throws Error if tests path doesn't exist or if a file cannot be parsed
+ */
 async function loadTestCases(
   testsPath: string,
   patterns: string[],
@@ -81,7 +112,7 @@ async function loadTestCases(
     throw new Error(`Tests path does not exist: ${fullPath}`);
   }
 
-  const stat = require("fs").statSync(fullPath);
+  const stat = statSync(fullPath);
 
   if (stat.isFile()) {
     // Load single file
