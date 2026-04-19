@@ -2,15 +2,19 @@ import { logger } from "../utils/logger";
 import type { TestsConfig, ExecutionConfig, ClaudeConfig } from "../types/config";
 
 /**
- * Validation result
+ * Validation result interface
  */
 export interface ValidationResult {
+  /** Whether the validation passed */
   isValid: boolean;
+  /** Array of error messages */
   errors: string[];
 }
 
 /**
  * Validate tests configuration
+ * @param config - The tests configuration to validate
+ * @returns Validation result with any errors found
  */
 export function validateTestsConfig(config: TestsConfig): ValidationResult {
   const errors: string[] = [];
@@ -35,6 +39,8 @@ export function validateTestsConfig(config: TestsConfig): ValidationResult {
 
 /**
  * Validate execution configuration
+ * @param config - The execution configuration to validate
+ * @returns Validation result with any errors found
  */
 export function validateExecutionConfig(config: ExecutionConfig): ValidationResult {
   const errors: string[] = [];
@@ -63,6 +69,8 @@ export function validateExecutionConfig(config: ExecutionConfig): ValidationResu
 
 /**
  * Validate Claude configuration
+ * @param config - The Claude configuration to validate
+ * @returns Validation result with any errors found
  */
 export function validateClaudeConfig(config: ClaudeConfig): ValidationResult {
   const errors: string[] = [];
@@ -79,6 +87,8 @@ export function validateClaudeConfig(config: ClaudeConfig): ValidationResult {
 
 /**
  * Log validation errors with suggestions
+ * @param context - The context of the validation (e.g., "tests", "execution")
+ * @param result - The validation result to log
  */
 export function logValidationErrors(
   context: string,
