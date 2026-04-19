@@ -84,6 +84,53 @@ Build the CLI: `bun run build`
 
 # Limit Claude Code interactions
 ./dist/cc-test-runner --testsPath=./tests.json --maxTurns=20
+
+# Run the sample PDCA E2E tests
+./dist/cc-test-runner -t ./samples/pdca-e2e-tests.json -v
+```
+
+#### Running the Sample Tests
+
+To test the sample `pdca-e2e-tests.json`:
+
+```bash
+# Navigate to the CLI directory
+cd cli
+
+# Build the test runner (if not already built)
+./init.dev.sh
+bun run build
+
+# Run the sample tests
+./dist/cc-test-runner --testsPath=./samples/pdca-e2e-tests.json
+
+# Run with verbose output to see all Claude Code messages
+./dist/cc-test-runner -t ./samples/pdca-e2e-tests.json -v
+
+# Run with custom results directory
+./dist/cc-test-runner -t ./samples/pdca-e2e-tests.json -o ./my-test-results
+```
+
+**Important**: Make sure the test target (`localhost:5173` in the sample) is running before executing the tests.
+
+#### Viewing Test Results
+
+After test execution completes, results are saved in the results directory (default: `./results`):
+
+- **CTRF Format Report**: `./results/ctrf-report.json` - Machine-readable test results
+- **Markdown Summary**: `./results/test-summary.md` - Human-readable test summary
+- **Playwright Traces**: `./results/{test-case-id}/traces/` - Detailed browser traces for debugging
+- **Screenshots**: `./results/{test-case-id}/*.png` - Screenshots captured at critical test points (if `--screenshots` is enabled)
+
+Example result structure:
+```
+results/
+├── ctrf-report.json
+├── test-summary.md
+└── login-test-case/
+    ├── traces/
+    │   └── trace.zip
+    └── *.png
 ```
 
 ### Docker Image + GitHub Actions

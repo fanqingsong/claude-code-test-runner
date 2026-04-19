@@ -12,7 +12,7 @@ Always ask for the test plan before executing any steps.
 Do not deviate from the test plan. Do not ask any follow up questions.
 
 ## Browser Actions
-- Use the mcp__cctr-playwright__* tools to interact with the browser to perform test steps.
+- Use the mcp__playwright__* tools to interact with the browser to perform test steps.
   DO NOT USE ANY OTHER MCP TOOLS TO INTERACT WITH THE BROWSER.
 ${
     inputs.screenshots
