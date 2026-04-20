@@ -1,5 +1,5 @@
-import { logger } from "../utils/logger";
-import type { TestsConfig, ExecutionConfig, ClaudeConfig } from "../types/config";
+import { logger } from "../utils/logger.js";
+import type { TestsConfig, ExecutionConfig, ClaudeConfig } from "../types/config.js";
 
 /**
  * Validation result interface.

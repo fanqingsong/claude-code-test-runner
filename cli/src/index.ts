@@ -27,6 +27,10 @@ if (isConfigCommand) {
   setupLogger(configLoader.getRawConfig());
 
   // Run the default test execution
+  /**
+   * Runs all test cases using the MCP state server.
+   * Starts the server, executes each test case, and generates reports.
+   */
   async function runTests() {
     // Start the MCP state server.
     // This manages the state for the active test case.

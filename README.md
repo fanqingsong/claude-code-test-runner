@@ -76,17 +76,20 @@ Build the CLI: `bun run build`
 #### Example Commands
 
 ```bash
-# Basic usage with test file
-./dist/cc-test-runner --testsPath=./tests.json
+# Using configuration file
+cc-test-runner
 
-# With custom results directory and verbose output
-./dist/cc-test-runner -t ./e2e-tests.json -o ./test-output -v
+# Override config with CLI arguments
+cc-test-runner --verbose
 
-# Limit Claude Code interactions
-./dist/cc-test-runner --testsPath=./tests.json --maxTurns=20
+# Specify environment
+cc-test-runner --environment production
 
-# Run the sample PDCA E2E tests
-./dist/cc-test-runner -t ./samples/pdca-e2e-tests.json -v
+# Traditional CLI usage (still works)
+cc-test-runner -t ./tests.json -v
+
+# With custom config file
+cc-test-runner --config ./my-config.yaml
 ```
 
 #### Running the Sample Tests
@@ -112,6 +115,93 @@ bun run build
 ```
 
 **Important**: Make sure the test target (`localhost:5173` in the sample) is running before executing the tests.
+
+## Configuration
+
+The test runner supports configuration files to simplify CLI usage and manage environment-specific settings.
+
+### Configuration File
+
+Create a configuration file at `config/cc-test.yaml`:
+
+```bash
+cc-test-runner config init
+```
+
+### Configuration Structure
+
+```yaml
+# Default configuration
+default:
+  tests:
+    path: ./tests
+    patterns:
+      - "**/*.json"
+    exclude:
+      - "**/node_modules/**"
+
+  execution:
+    resultsPath: ./results
+    verbose: false
+    screenshots: false
+    maxTurns: 30
+    timeout: 300000
+
+  claude:
+    model: claude-sonnet-4-6
+
+# Environment-specific overrides
+environments:
+  development:
+    execution:
+      verbose: true
+      screenshots: true
+
+  production:
+    execution:
+      maxTurns: 20
+```
+
+### Environment Detection
+
+The test runner automatically detects the environment:
+
+1. **CLI argument**: `--environment production`
+2. **Environment variable**: `CC_TEST_ENV` or `NODE_ENV`
+3. **Git branch**: `main/master` → production, `*dev*` → development
+4. **Default**: development
+
+### CLI Argument Priority
+
+Command-line arguments override configuration file settings:
+
+```bash
+# Use config file settings
+cc-test-runner
+
+# Override specific settings
+cc-test-runner --verbose --screenshots
+```
+
+### Configuration Commands
+
+```bash
+# Create sample configuration
+cc-test-runner config init
+
+# Validate configuration
+cc-test-runner config validate
+
+# Show current configuration
+cc-test-runner config show
+
+# Show configuration for specific environment
+cc-test-runner config show --environment production
+```
+
+### Backward Compatibility
+
+Configuration files are optional. The test runner works with command-line arguments only, maintaining full backward compatibility.
 
 #### Viewing Test Results
 

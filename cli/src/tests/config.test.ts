@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { writeFileSync, unlinkSync, mkdirSync, rmdirSync } from "fs";
 import { resolve } from "path";
-import { ConfigLoader } from "../config/loader";
-import { configFileSchema } from "../types/config";
+import { ConfigLoader } from "../config/loader.js";
 
 const TEST_CONFIG_DIR = resolve(__dirname, "../../test-config");
 const TEST_CONFIG_PATH = resolve(TEST_CONFIG_DIR, "test.yaml");
@@ -17,10 +16,14 @@ describe("ConfigLoader", () => {
     // Clean up test config
     try {
       unlinkSync(TEST_CONFIG_PATH);
-    } catch {}
+    } catch {
+      // File doesn't exist, ignore error
+    }
     try {
       rmdirSync(TEST_CONFIG_DIR);
-    } catch {}
+    } catch {
+      // Directory doesn't exist, ignore error
+    }
   });
 
   describe("environment detection", () => {

@@ -10,7 +10,11 @@ export const logger = winston.createLogger({
     ],
 });
 
-// Function to configure logger with file transport after args are loaded
+/**
+ * Configures the logger with console and file transports based on verbosity level.
+ * @param resultsPath - Directory path where debug log file will be created.
+ * @param verbose - Whether to enable debug level logging to console.
+ */
 export function configureLogger(resultsPath: string, verbose: boolean) {
     logger.clear();
     logger.add(new winston.transports.Console({

@@ -1,4 +1,4 @@
-import { inputs } from "../utils/args";
+import { inputs } from "../utils/args.js";
 
 /**
  * The system prompt for the Claude Code query test execution.

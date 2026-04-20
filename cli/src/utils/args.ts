@@ -33,17 +33,25 @@ const program = new Command()
 // We'll parse later, after the main program sets up subcommands
 let args: CLIOptions = {};
 
+/**
+ * Parses command line arguments and stores them for later access.
+ * @returns Parsed CLI options.
+ */
 export function parseArgs() {
   program.parse(process.argv);
   args = program.opts<CLIOptions>();
   return args;
 }
 
-// Configure logger after args are loaded
-export function setupLogger(config: any) {
+/**
+ * Configures the logger based on the provided configuration.
+ * @param config - The configuration object containing logger settings.
+ */
+export function setupLogger(config: unknown) {
+  const envConfig = config as EnvironmentConfig;
   configureLogger(
-    config.execution?.resultsPath || './results',
-    config.execution?.verbose || false
+    envConfig.execution?.resultsPath || './results',
+    envConfig.execution?.verbose || false
   );
 }
 
@@ -110,12 +118,11 @@ if (configLoader.getRawConfig()) {
 /**
  * Loads test cases from a specified path, which can be a single file or a directory.
  * Supports filtering by file patterns and exclusion patterns.
- *
- * @param testsPath - Path to the tests file or directory
- * @param patterns - Glob patterns to match test files (e.g., glob patterns)
- * @param exclude - Glob patterns to exclude from matching (e.g., exclude patterns)
- * @returns Promise<TestCase[]> Array of loaded and validated test cases
- * @throws Error if tests path doesn't exist or if a file cannot be parsed
+ * @param testsPath - Path to the tests file or directory.
+ * @param patterns - Glob patterns to match test files (e.g., glob patterns).
+ * @param exclude - Glob patterns to exclude from matching (e.g., exclude patterns).
+ * @returns Promise<TestCase[]> Array of loaded and validated test cases.
+ * @throws {Error} If tests path doesn't exist or if a file cannot be parsed.
  */
 async function loadTestCases(
   testsPath: string,

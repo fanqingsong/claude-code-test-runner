@@ -1,9 +1,8 @@
-import { which } from "bun";
 import { existsSync } from "fs";
-import { systemPrompt } from "./system";
+import { systemPrompt } from "./system.js";
 import { query } from "@anthropic-ai/claude-code";
-import { inputs } from "../utils/args";
-import type { TestCase } from "../types/test-case";
+import { inputs } from "../utils/args.js";
+import type { TestCase } from "../types/test-case.js";
 
 /**
  * Initiates a Claude Code query to start a test execution.

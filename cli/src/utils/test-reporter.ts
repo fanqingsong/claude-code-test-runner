@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "fs";
-import type { TestCase } from "../types/test-case";
-import type { Report, Test } from "ctrf/types/ctrf";
+import type { TestCase } from "../types/test-case.js";
+import type { Report, Test } from "ctrf";
 
 /**
  * A class for reporting test results.

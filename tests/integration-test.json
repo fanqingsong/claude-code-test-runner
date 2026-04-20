@@ -1,0 +1,30 @@
+[
+  {
+    "id": "integration-test-1",
+    "name": "Integration Test - Config File Support",
+    "description": "Verify configuration file loading and CLI argument overrides",
+    "url": "http://localhost:5173",
+    "steps": [
+      {
+        "id": 1,
+        "description": "Navigate to test URL",
+        "type": "navigate",
+        "params": {
+          "url": "{{url}}"
+        },
+        "expected": "Page loads successfully"
+      },
+      {
+        "id": 2,
+        "description": "Verify page title",
+        "type": "assert",
+        "params": {
+          "property": "title",
+          "operator": "equals",
+          "value": "Test Page"
+        },
+        "expected": "Page title matches expected value"
+      }
+    ]
+  }
+]
