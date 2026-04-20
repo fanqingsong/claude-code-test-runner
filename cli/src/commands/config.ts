@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { ConfigLoader } from "../config/loader";
-import { logger } from "../utils/logger";
-import { writeFile } from "../utils/file-utils";
+import { ConfigLoader } from "../config/loader.js";
+import { logger } from "../utils/logger.js";
+import { writeFile } from "../utils/file-utils.js";
 
 export const configCommands = new Command()
   .name("config")
@@ -77,7 +77,7 @@ default:
     verbose: false
     screenshots: false
     maxTurns: 30
-    timeout: 300000  # 5 minutes in milliseconds
+    timeout: 300000
 
   # Claude AI configuration
   claude:
@@ -105,10 +105,17 @@ environments:
   production:
     execution:
       maxTurns: 20
-      timeout: 180000  # 3 minutes
+      timeout: 180000
     tests:
       exclude:
         - "**/experimental/**"
+
+  # Staging environment - minimal output
+  staging:
+    execution:
+      verbose: false
+      screenshots: false
+      maxTurns: 25
 `;
 
     try {

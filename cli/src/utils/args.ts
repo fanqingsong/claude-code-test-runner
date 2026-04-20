@@ -1,11 +1,12 @@
 import { readFileSync, existsSync, statSync } from "fs";
 import { resolve } from "path";
-import { testCaseSchema, type TestCase } from "../types/test-case";
+import { testCaseSchema, type TestCase } from "../types/test-case.js";
 import z from "zod";
-import { logger } from "./logger";
 import { Command } from "commander";
-import { ConfigLoader } from "../config/loader";
-import { findFiles } from "./file-utils";
+import { ConfigLoader } from "../config/loader.js";
+import { findFiles } from "./file-utils.js";
+import { type EnvironmentConfig } from "../types/config.js";
+import { logger, configureLogger } from "./logger.js";
 
 interface CLIOptions {
   testsPath?: string;
@@ -18,6 +19,7 @@ interface CLIOptions {
   environment?: string;
 }
 
+// Create program but don't parse yet - let the main program handle parsing
 const program = new Command()
   .option("-t, --testsPath <path>", "Path to the tests file or directory")
   .option("-o, --resultsPath <path>", "Path to the results file")
@@ -26,14 +28,30 @@ const program = new Command()
   .option("--maxTurns <turns>", "Maximum turns per test case")
   .option("-m, --model <model>", "The model to use")
   .option("-c, --config <path>", "Path to config file", "config/cc-test.yaml")
-  .option("-e, --environment <env>", "Environment to use")
-  .parse(process.argv);
+  .option("-e, --environment <env>", "Environment to use");
 
-const args = program.opts<CLIOptions>();
+// We'll parse later, after the main program sets up subcommands
+let args: CLIOptions = {};
+
+export function parseArgs() {
+  program.parse(process.argv);
+  args = program.opts<CLIOptions>();
+  return args;
+}
+
+// Configure logger after args are loaded
+export function setupLogger(config: any) {
+  configureLogger(
+    config.execution?.resultsPath || './results',
+    config.execution?.verbose || false
+  );
+}
+
+export { program };
 
 // Load configuration file
 const configLoader = new ConfigLoader(args.config, args.environment);
-let config = {};
+let config: EnvironmentConfig = {};
 try {
   config = configLoader.load();
 } catch (error) {
@@ -94,8 +112,8 @@ if (configLoader.getRawConfig()) {
  * Supports filtering by file patterns and exclusion patterns.
  *
  * @param testsPath - Path to the tests file or directory
- * @param patterns - Glob patterns to match test files (e.g., ["**/*.json"])
- * @param exclude - Glob patterns to exclude from matching (e.g., ["**/node_modules/**"])
+ * @param patterns - Glob patterns to match test files (e.g., glob patterns)
+ * @param exclude - Glob patterns to exclude from matching (e.g., exclude patterns)
  * @returns Promise<TestCase[]> Array of loaded and validated test cases
  * @throws Error if tests path doesn't exist or if a file cannot be parsed
  */
@@ -138,17 +156,21 @@ async function loadTestCases(
   return testCases;
 }
 
-// Load test cases (use top-level await)
+// Load test cases (use top-level await) - but only if not in config mode
 let testCases: TestCase[] = [];
-try {
-  testCases = await loadTestCases(
-    mergedConfig.testsPath ?? "./tests",
-    mergedConfig.testPatterns,
-    mergedConfig.testExclude
-  );
-} catch (error) {
-  logger.error("Error loading test cases", { error });
-  process.exit(1);
+const isConfigMode = process.argv.slice(2)[0] === 'config';
+
+if (!isConfigMode) {
+  try {
+    testCases = await loadTestCases(
+      mergedConfig.testsPath ?? "./tests",
+      mergedConfig.testPatterns,
+      mergedConfig.testExclude
+    );
+  } catch (error) {
+    logger.error("Error loading test cases", { error });
+    process.exit(1);
+  }
 }
 
 const inputs: CLIOptions & {

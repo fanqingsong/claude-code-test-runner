@@ -10,14 +10,14 @@ import {
   type TestsConfig,
   type ExecutionConfig,
   type ClaudeConfig,
-} from "../types/config";
-import { logger } from "../utils/logger";
+} from "../types/config.js";
+import { logger } from "../utils/logger.js";
 import {
   validateTestsConfig,
   validateExecutionConfig,
   validateClaudeConfig,
   logValidationErrors,
-} from "./validator";
+} from "./validator.js";
 
 export class ConfigLoader {
   private configPath: string;
@@ -127,7 +127,7 @@ export class ConfigLoader {
 
     try {
       const fileContent = readFileSync(this.configPath, "utf-8");
-      const parsed = yaml.load(fileContent, { schema: yaml.FAILSAFE_SCHEMA }) as object;
+      const parsed = yaml.load(fileContent) as object;
       this.configFile = configFileSchema.parse(parsed);
 
       logger.info(`Loaded configuration from ${this.configPath}`);
