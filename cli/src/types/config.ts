@@ -1,7 +1,7 @@
 import z from "zod";
 
 /**
- * Supported environment names
+ * Supported environment names.
  */
 export const environmentSchema = z.enum([
   "development",
@@ -13,7 +13,7 @@ export const environmentSchema = z.enum([
 export type Environment = z.infer<typeof environmentSchema>;
 
 /**
- * Test configuration options
+ * Test configuration options.
  */
 export const testsConfigSchema = z.object({
   path: z.string().default("./tests"),
@@ -24,7 +24,7 @@ export const testsConfigSchema = z.object({
 export type TestsConfig = z.infer<typeof testsConfigSchema>;
 
 /**
- * Execution configuration options
+ * Execution configuration options.
  */
 export const executionConfigSchema = z.object({
   resultsPath: z.string().default("./results"),
@@ -37,7 +37,7 @@ export const executionConfigSchema = z.object({
 export type ExecutionConfig = z.infer<typeof executionConfigSchema>;
 
 /**
- * Claude AI configuration options
+ * Claude AI configuration options.
  */
 export const claudeConfigSchema = z.object({
   model: z.string().optional(),
@@ -46,7 +46,7 @@ export const claudeConfigSchema = z.object({
 export type ClaudeConfig = z.infer<typeof claudeConfigSchema>;
 
 /**
- * Single environment configuration
+ * Single environment configuration.
  */
 export const environmentConfigSchema = z.object({
   tests: testsConfigSchema.optional(),
@@ -57,11 +57,25 @@ export const environmentConfigSchema = z.object({
 export type EnvironmentConfig = z.infer<typeof environmentConfigSchema>;
 
 /**
- * Complete configuration file structure
+ * Complete configuration file structure.
  */
 export const configFileSchema = z.object({
   default: environmentConfigSchema,
-  environments: z.record(environmentSchema, environmentConfigSchema).optional(),
+  environments: z
+    .record(z.string(), environmentConfigSchema)
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const keys = Object.keys(val);
+        return keys.every((key) =>
+          ["development", "testing", "production", "staging"].includes(key)
+        );
+      },
+      {
+        message: "Invalid environment name. Must be one of: development, testing, production, staging",
+      }
+    ),
 });
 
 export type ConfigFile = z.infer<typeof configFileSchema>;
