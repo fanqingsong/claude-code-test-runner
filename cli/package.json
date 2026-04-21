@@ -25,16 +25,23 @@
     "@anthropic-ai/sdk": "^0.60.0",
     "@modelcontextprotocol/sdk": "^1.17.2",
     "@playwright/mcp": "v0.0.31",
+    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.3",
     "@types/node": "^24.2.1",
+    "@types/sql.js": "^1.4.11",
+    "@types/ws": "^8.18.1",
+    "chart.js": "^4.5.1",
     "commander": "^14.0.0",
     "ctrf": "0.0.13-next.6",
+    "ejs": "^5.0.2",
     "eslint-plugin-jsdoc": "^54.0.0",
     "express": "^5.1.0",
     "glob": "^10.3.0",
     "js-yaml": "^4.1.0",
     "playwright": "^1.49.1",
+    "sql.js": "^1.14.1",
     "winston": "^3.17.0",
+    "ws": "^8.20.0",
     "zod": "^4.0.17"
   }
 }
