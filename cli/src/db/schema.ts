@@ -55,12 +55,12 @@ export const CREATE_TABLES_SQL = `
     run_id INTEGER NOT NULL,
     test_id TEXT NOT NULL,
     description TEXT,
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed')),
     duration INTEGER NOT NULL,
     start_time INTEGER NOT NULL,
     end_time INTEGER NOT NULL,
     message TEXT,
-    FOREIGN KEY (run_id) REFERENCES test_runs(id)
+    FOREIGN KEY (run_id) REFERENCES test_runs(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS test_steps (
@@ -68,9 +68,9 @@ export const CREATE_TABLES_SQL = `
     test_case_id INTEGER NOT NULL,
     step_number INTEGER NOT NULL,
     description TEXT NOT NULL,
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'pending')),
     error_message TEXT,
-    FOREIGN KEY (test_case_id) REFERENCES test_cases(id)
+    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE
   );
 
   CREATE INDEX IF NOT EXISTS idx_test_runs_start_time ON test_runs(start_time);
