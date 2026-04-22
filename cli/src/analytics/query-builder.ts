@@ -28,6 +28,10 @@ export interface FailurePattern {
 export class QueryBuilder {
   constructor(private db: Database) {}
 
+  getConnection(): Database {
+    return this.db;
+  }
+
   getPassRateTrends(days: number = 30): PassRateTrend[] {
     const stmt = this.db.prepare(`
       SELECT
