@@ -11,26 +11,27 @@ The system consists of 4 microservices sharing a PostgreSQL database:
 │ Test Case API   │      │ Scheduler API   │
 │   (FastAPI)     │      │   (FastAPI)     │
 │   Port: 8001    │      │   Port: 8002    │
-└────────┬────────┘      └────────┬────────┘
-         │                        │
-         └────────────┬───────────┘
-                      │
-         ┌────────────▼────────────┐
-         │   PostgreSQL Database   │
-         │   Port: 5432           │
-         └────────────┬────────────┘
-                      │
-         ┌────────────▼────────────┐
-         │   Dashboard Service     │
-         │   (Express.js)          │
-         │   Port: 8003           │
-         └─────────────────────────┘
-
-┌─────────────────┐
-│ Redis Queue     │
-│ Port: 6379      │
-│ (Celery Broker) │
-└─────────────────┘
+└────────┬────────┘      └─┬───────────┬──┘
+         │                  │           │
+         └──────────┬───────┘           │
+                    │                   │
+         ┌──────────▼───────────┐       │
+         │   PostgreSQL         │       │
+         │   Database           │       │
+         │   Port: 5432         │       │
+         └──────────┬───────────┘       │
+                    │                   │
+         ┌──────────▼───────────┐       │
+         │   Dashboard Service  │       │
+         │   (Express.js)       │       │
+         │   Port: 8003         │       │
+         └──────────────────────┘       │
+                                       │
+                    ┌──────────────────▼──────┐
+                    │   Redis Queue            │
+                    │   Port: 6379             │
+                    │   (Celery Broker)        │
+                    └──────────────────────────┘
 ```
 
 ## Services
