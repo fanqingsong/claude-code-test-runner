@@ -1,12 +1,15 @@
 import express from 'express';
 import { Server as HttpServer } from 'http';
 import { Server as WebSocketServer } from 'ws';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { Database } from 'bun:sqlite';
 import { DatabaseManager } from '../db/manager';
 import { DataProcessor } from './generators/data-processor';
 import { QueryBuilder } from '../analytics/query-builder';
 import { logger } from '../utils/logger';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export interface TestRunResult {
   id: number;
@@ -150,8 +153,25 @@ export class ReportingServer {
     });
 
     // Serve the dashboard HTML
-    this.app.get('/', (req, res) => {
-      res.sendFile(path.join(process.cwd(), 'src/reporting/templates/dashboard.ejs'));
+    this.app.get('/', async (req, res) => {
+      try {
+        const ejs = (await import('ejs')).default;
+        const fs = (await import('fs')).default;
+        const templatePath = path.join(__dirname, 'templates/dashboard.ejs');
+        const template = fs.readFileSync(templatePath, 'utf-8');
+
+        // Get dashboard data
+        const days = parseInt(req.query.days as string) || 30;
+        const processor = new DataProcessor(this.dbManager.getConnection());
+        const data = processor.processDashboardData(days);
+
+        // Render template
+        const html = await ejs.render(template, { data });
+        res.send(html);
+      } catch (error) {
+        logger.error('Error rendering dashboard:', error);
+        res.status(500).json({ error: 'Failed to render dashboard' });
+      }
     });
 
     // 404 handler
