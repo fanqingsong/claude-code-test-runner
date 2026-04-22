@@ -51,7 +51,7 @@ describe("DatabaseManager", () => {
 
   it("should insert and retrieve test cases", () => {
     const testRun: TestRun = {
-      run_id: "test-123",
+      run_id: `test-${Date.now()}`,
       start_time: 1000,
       end_time: 2000,
       total_tests: 1,
@@ -82,7 +82,7 @@ describe("DatabaseManager", () => {
 
   it("should insert and retrieve test steps", () => {
     const testRun: TestRun = {
-      run_id: "test-123",
+      run_id: `test-${Date.now()}`,
       start_time: 1000,
       end_time: 2000,
       total_tests: 1,
