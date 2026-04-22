@@ -4,15 +4,21 @@ Test Versions API Endpoints
 Operations for viewing and restoring test definition versions.
 """
 
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.models import TestDefinition, TestStep, TestVersion
+from app.schemas import TestDefinitionResponse, TestVersionSnapshot
 
 router = APIRouter()
 
 
-@router.get("/test-definition/{test_definition_id}")
+@router.get("/test-definition/{test_definition_id}", response_model=List[TestVersionSnapshot])
 async def list_test_versions(
     test_definition_id: int,
     db: AsyncSession = Depends(get_db)
@@ -20,15 +26,32 @@ async def list_test_versions(
     """
     List all versions of a test definition.
 
-    TODO: Implement in Task 4
+    - **test_definition_id**: Test definition internal ID
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint will be implemented in Task 4"
+    # Verify test definition exists
+    result = await db.execute(
+        select(TestDefinition).where(TestDefinition.id == test_definition_id)
     )
+    test_def = result.scalar_one_or_none()
+
+    if not test_def:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Test definition with id {test_definition_id} not found"
+        )
+
+    # Get versions
+    result = await db.execute(
+        select(TestVersion)
+        .where(TestVersion.test_definition_id == test_definition_id)
+        .order_by(TestVersion.version.desc())
+    )
+    versions = result.scalars().all()
+
+    return versions
 
 
-@router.get("/{version_id}")
+@router.get("/{version_id}", response_model=TestVersionSnapshot)
 async def get_test_version(
     version_id: int,
     db: AsyncSession = Depends(get_db)
@@ -36,15 +59,21 @@ async def get_test_version(
     """
     Get a specific test version snapshot.
 
-    TODO: Implement in Task 4
+    - **version_id**: Test version internal ID
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint will be implemented in Task 4"
-    )
+    result = await db.execute(select(TestVersion).where(TestVersion.id == version_id))
+    version = result.scalar_one_or_none()
+
+    if not version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Test version with id {version_id} not found"
+        )
+
+    return version
 
 
-@router.post("/test-definition/{test_definition_id}/restore/{version_id}")
+@router.post("/test-definition/{test_definition_id}/restore/{version_id}", response_model=TestDefinitionResponse)
 async def restore_test_version(
     test_definition_id: int,
     version_id: int,
@@ -53,12 +82,81 @@ async def restore_test_version(
     """
     Restore a test definition to a specific version.
 
-    TODO: Implement in Task 4
-    - Create new version snapshot before restoring
-    - Replace current definition with version snapshot
-    - Increment version number
+    Creates a new version snapshot before restoring.
+
+    - **test_definition_id**: Test definition internal ID
+    - **version_id**: Version to restore
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint will be implemented in Task 4"
+    # Get test definition
+    result = await db.execute(
+        select(TestDefinition)
+        .options(selectinload(TestDefinition.test_steps))
+        .where(TestDefinition.id == test_definition_id)
     )
+    test_def = result.scalar_one_or_none()
+
+    if not test_def:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Test definition with id {test_definition_id} not found"
+        )
+
+    # Get version to restore
+    result = await db.execute(select(TestVersion).where(TestVersion.id == version_id))
+    version = result.scalar_one_or_none()
+
+    if not version or version.test_definition_id != test_definition_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Test version with id {version_id} not found for this test definition"
+        )
+
+    # Create snapshot before restoring
+    current_snapshot = TestDefinitionResponse.model_validate(test_def).model_dump()
+    pre_restore_version = TestVersion(
+        test_definition_id=test_definition_id,
+        version=test_def.version,
+        snapshot=current_snapshot,
+        change_description="Pre-restore snapshot",
+        created_by="system"  # TODO: Get from JWT token in Task 5
+    )
+    db.add(pre_restore_version)
+
+    # Restore from version snapshot
+    snapshot_data = version.snapshot
+
+    # Update test definition fields
+    test_def.name = snapshot_data.get("name", test_def.name)
+    test_def.description = snapshot_data.get("description")
+    test_def.url = snapshot_data.get("url")
+    test_def.environment = snapshot_data.get("environment", {})
+    test_def.tags = snapshot_data.get("tags", [])
+    test_def.version += 1
+
+    # Restore test steps
+    # Delete existing steps
+    for step in test_def.test_steps:
+        await db.delete(step)
+
+    # Add steps from snapshot
+    for step_data in snapshot_data.get("test_steps", []):
+        new_step = TestStep(
+            test_definition_id=test_definition_id,
+            step_number=step_data.get("step_number"),
+            description=step_data.get("description"),
+            type=step_data.get("type"),
+            params=step_data.get("params", {}),
+            expected_result=step_data.get("expected_result")
+        )
+        db.add(new_step)
+
+    await db.commit()
+    await db.refresh(test_def)
+
+    # Reload with test steps
+    result = await db.execute(
+        select(TestDefinition)
+        .options(selectinload(TestDefinition.test_steps))
+        .where(TestDefinition.id == test_definition_id)
+    )
+    return result.scalar_one()
