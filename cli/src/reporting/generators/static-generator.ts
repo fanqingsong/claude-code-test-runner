@@ -1,9 +1,11 @@
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "fs";
 import { Database } from "bun:sqlite";
 import { DataProcessor } from "./data-processor";
 import ejs from "ejs";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export interface StaticGeneratorOptions {
   outputPath: string;
@@ -11,34 +13,57 @@ export interface StaticGeneratorOptions {
 }
 
 export class StaticGenerator {
-  constructor(private db: Database) {}
+  constructor(private dbManager: any) {} // Use any for compatibility with DatabaseManager
 
-  async generateDashboard(days: number = 30): Promise<void> {
+  async generate(options: StaticGeneratorOptions): Promise<void> {
+    const days = options.days || 30;
     logger.info('Generating static dashboard...');
 
+    // Get database connection
+    const db = this.dbManager.getConnection();
+
     // Process dashboard data
-    const processor = new DataProcessor(this.db);
+    const processor = new DataProcessor(db);
     const data = processor.processDashboardData(days);
 
     // Generate CSS and JavaScript files
-    await this.generateAssets();
+    await this.generateAssets(options);
 
     // Render main dashboard
-    const templatePath = join(process.cwd(), 'src/reporting/templates/dashboard.ejs');
+    const templatePath = join(__dirname, '../templates/dashboard.ejs');
     const template = readFileSync(templatePath, 'utf-8');
     const html = await ejs.render(template, { data });
 
-    // Write index.html
-    const indexPath = join(process.cwd(), 'dist/dashboard/index.html');
-    mkdirSync(indexPath.split('/').slice(0, -1).join('/'), { recursive: true });
-    writeFileSync(indexPath, html);
+    logger.info(`Writing HTML to: ${options.outputPath}`);
+    logger.info(`HTML length: ${html.length}`);
 
-    logger.info(`Dashboard generated: ${indexPath}`);
+    // Write index.html to the specified output path
+    const outputPath = options.outputPath;
+    const outputDir = dirname(outputPath);
+
+    // Double-check that output path is not a directory
+    if (existsSync(outputPath)) {
+      const stats = require('fs').statSync(outputPath);
+      if (stats.isDirectory()) {
+        throw new Error(`Output path ${outputPath} is already a directory`);
+      }
+    }
+
+    // Ensure the parent directory exists
+    if (outputDir !== '.' && outputDir !== '/') {
+      mkdirSync(outputDir, { recursive: true });
+      logger.info(`Created directory: ${outputDir}`);
+    }
+
+    writeFileSync(outputPath, html);
+    logger.info(`File written successfully: ${outputPath}`);
+
+    logger.info(`Dashboard generated: ${outputPath}`);
     logger.info(`File size: ${(html.length / 1024).toFixed(2)} KB`);
   }
 
-  private async generateAssets(): Promise<void> {
-    const assetsDir = join(process.cwd(), 'dist/dashboard/assets');
+  private async generateAssets(options: StaticGeneratorOptions): Promise<void> {
+    const assetsDir = join(dirname(options.outputPath), 'assets');
     mkdirSync(assetsDir, { recursive: true });
 
     // Generate CSS

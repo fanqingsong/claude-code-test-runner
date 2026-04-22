@@ -32,8 +32,8 @@ dashboardCommands
       const db = new DatabaseManager(options.dbPath);
 
       // Generate static dashboard
-      const generator = new StaticGenerator(db.getConnection(), options.output);
-      await generator.generateDashboard(parseInt(options.days));
+      const generator = new StaticGenerator(db);
+      await generator.generate({ outputPath: options.output, days: parseInt(options.days) });
 
       logger.info(`Static dashboard generated successfully at: ${options.output}/index.html`);
     } catch (error) {
@@ -124,7 +124,8 @@ dashboardCommands
   .action(async (options) => {
     try {
       logger.info('Initializing database...');
-      runMigrations(options.dbPath);
+      // Use DatabaseManager to initialize the database
+      const dbManager = new DatabaseManager(options.dbPath);
       logger.info('Database initialized successfully');
     } catch (error) {
       logger.error('Error initializing database:', error);

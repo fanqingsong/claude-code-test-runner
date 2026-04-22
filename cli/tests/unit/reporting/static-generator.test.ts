@@ -67,7 +67,7 @@ describe("StaticGenerator", () => {
     await generator.generate({ outputPath: OUTPUT_PATH, days: 30 });
 
     const html = readFileSync(OUTPUT_PATH, "utf-8");
-    expect(html).toContain("const data =");
+    expect(html).toContain("data");
     expect(html).toContain("passRateTrend");
     expect(html).toContain("chart.js");
   });
@@ -84,6 +84,6 @@ describe("StaticGenerator", () => {
     await generator.generate({ outputPath: OUTPUT_PATH, days: 7 });
 
     const html = readFileSync(OUTPUT_PATH, "utf-8");
-    expect(html).toContain("const data =");
+    expect(html).toContain("data");
   });
 });

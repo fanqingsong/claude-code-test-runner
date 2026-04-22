@@ -3,6 +3,7 @@ import { Server as HttpServer } from 'http';
 import { Server as WebSocketServer } from 'ws';
 import path from 'path';
 import { Database } from 'bun:sqlite';
+import { DatabaseManager } from '../db/manager';
 import { DataProcessor } from './generators/data-processor';
 import { QueryBuilder } from '../analytics/query-builder';
 import { logger } from '../utils/logger';
@@ -38,15 +39,15 @@ export class ReportingServer {
   private app: express.Application;
   private server: HttpServer;
   private wss: WebSocketServer;
-  private db: Database;
+  private dbManager: DatabaseManager;
   private dataProcessor: DataProcessor;
 
   constructor(private port: number = 3000, private dbPath: string = './results') {
     this.app = express();
     this.server = new HttpServer(this.app);
     this.wss = new WebSocketServer({ server: this.server });
-    this.db = new Database(this.dbPath);
-    this.dataProcessor = new DataProcessor(this.db);
+    this.dbManager = new DatabaseManager(this.dbPath);
+    this.dataProcessor = new DataProcessor(this.dbManager.getConnection());
 
     this.setupMiddleware();
     this.setupRoutes();
@@ -86,7 +87,7 @@ export class ReportingServer {
     this.app.get('/api/test-runs', (req, res) => {
       try {
         const limit = parseInt(req.query.limit as string) || 100;
-        const queryBuilder = new QueryBuilder(this.db);
+        const queryBuilder = new QueryBuilder(this.dbManager.getConnection());
         const runs = queryBuilder.getRecentTestRuns(limit);
         res.json(runs);
       } catch (error) {
@@ -99,7 +100,7 @@ export class ReportingServer {
     this.app.get('/api/test-runs/:runId', (req, res) => {
       try {
         const runId = parseInt(req.params.runId);
-        const queryBuilder = new QueryBuilder(this.db);
+        const queryBuilder = new QueryBuilder(this.dbManager.getConnection());
         const testCases = queryBuilder.getTestCasesForRun(runId);
         res.json(testCases);
       } catch (error) {
@@ -112,7 +113,7 @@ export class ReportingServer {
     this.app.get('/api/slowest-tests', (req, res) => {
       try {
         const limit = parseInt(req.query.limit as string) || 20;
-        const queryBuilder = new QueryBuilder(this.db);
+        const queryBuilder = new QueryBuilder(this.dbManager.getConnection());
         const slowestTests = queryBuilder.getSlowestTests(limit);
         res.json(slowestTests);
       } catch (error) {
@@ -126,7 +127,7 @@ export class ReportingServer {
       try {
         const days = parseInt(req.query.days as string) || 30;
         const { FlakyDetector } = await import('../analytics/flaky-detector');
-        const flakyDetector = new FlakyDetector(this.db);
+        const flakyDetector = new FlakyDetector(this.dbManager.getConnection());
         const flakyTests = flakyDetector.detectFlakyTests(days);
         res.json(flakyTests);
       } catch (error) {
@@ -139,7 +140,7 @@ export class ReportingServer {
     this.app.get('/api/failure-patterns', (req, res) => {
       try {
         const limit = parseInt(req.query.limit as string) || 10;
-        const queryBuilder = new QueryBuilder(this.db);
+        const queryBuilder = new QueryBuilder(this.dbManager.getConnection());
         const patterns = queryBuilder.getFailurePatterns(limit);
         res.json(patterns);
       } catch (error) {
@@ -234,7 +235,7 @@ export class ReportingServer {
     logger.info('Stopping reporting server');
     this.wss.close();
     this.server.close();
-    this.db.close();
+    // Database is managed by DatabaseManager, no need to close
   }
 
   // Get server URL

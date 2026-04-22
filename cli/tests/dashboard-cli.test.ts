@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { Database } from 'bun:sqlite';
 import { join } from 'path';
+import { DatabaseManager } from '../src/db/manager';
 
 describe('Dashboard CLI Integration Tests', () => {
   let testDbPath: string;
@@ -33,81 +34,26 @@ describe('Dashboard CLI Integration Tests', () => {
   });
 
   function createTestDatabase() {
-    // Create a simple SQLite database with test data
-    const db = new Database(testDbPath);
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS test_runs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        run_id TEXT UNIQUE NOT NULL,
-        start_time INTEGER NOT NULL,
-        end_time INTEGER NOT NULL,
-        total_tests INTEGER NOT NULL,
-        passed INTEGER NOT NULL,
-        failed INTEGER NOT NULL,
-        total_duration INTEGER NOT NULL,
-        environment TEXT,
-        created_at INTEGER NOT NULL
-      );
+    // Use DatabaseManager to create test database
+    const dbManager = new DatabaseManager(testDbPath);
+    const db = dbManager.getConnection();
 
-      CREATE TABLE IF NOT EXISTS test_cases (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        run_id INTEGER NOT NULL,
-        test_id TEXT NOT NULL,
-        description TEXT,
-        status TEXT NOT NULL CHECK (status IN ('passed', 'failed')),
-        duration INTEGER NOT NULL,
-        start_time INTEGER NOT NULL,
-        end_time INTEGER NOT NULL,
-        message TEXT,
-        FOREIGN KEY (run_id) REFERENCES test_runs(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS test_steps (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        test_case_id INTEGER NOT NULL,
-        step_number INTEGER NOT NULL,
-        description TEXT NOT NULL,
-        status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'pending')),
-        error_message TEXT,
-        FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE
-      );
-    `);
-
-    // Insert test data
-    db.exec(`
+    const runResult = db.prepare(`
       INSERT INTO test_runs (run_id, start_time, end_time, total_tests, passed, failed, total_duration, environment, created_at)
-      VALUES ('test-run-1', ${Date.now() - 3600000}, ${Date.now() - 3500000}, 3, 2, 1, 15000, 'test', ${Date.now()});
-    `);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run("test-run-1", Date.now() - 1000, Date.now(), 10, 8, 2, 5000, "test", Date.now());
 
-    db.exec(`
-      INSERT INTO test_cases (run_id, test_id, description, status, duration, start_time, end_time, message)
-      VALUES (1, 'test-1', 'First test case', 'passed', 5000, ${Date.now() - 3600000}, ${Date.now() - 3550000}, null);
-    `);
+    const runId = runResult.lastInsertRowid;
 
-    db.exec(`
-      INSERT INTO test_cases (run_id, test_id, description, status, duration, start_time, end_time, message)
-      VALUES (1, 'test-2', 'Second test case', 'failed', 7000, ${Date.now() - 3550000}, ${Date.now() - 3480000}, 'Test failed');
-    `);
+    db.prepare(`
+      INSERT INTO test_cases (run_id, test_id, description, status, duration, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(runId, "test-1", "Test 1", "passed", 500, Date.now() - 1000, Date.now());
 
-    db.exec(`
-      INSERT INTO test_cases (run_id, test_id, description, status, duration, start_time, end_time, message)
-      VALUES (1, 'test-3', 'Third test case', 'passed', 3000, ${Date.now() - 3480000}, ${Date.now() - 3450000}, null);
-    `);
-
-    db.exec(`
-      INSERT INTO test_steps (test_case_id, step_number, description, status, error_message)
-      VALUES (1, 1, 'Step 1', 'passed', null);
-      INSERT INTO test_steps (test_case_id, step_number, description, status, error_message)
-      VALUES (1, 2, 'Step 2', 'passed', null);
-      INSERT INTO test_steps (test_case_id, step_number, description, status, error_message)
-      VALUES (2, 1, 'Step 1', 'passed', null);
-      INSERT INTO test_steps (test_case_id, step_number, description, status, error_message)
-      VALUES (2, 2, 'Step 2', 'failed', 'Step failed');
-      INSERT INTO test_steps (test_case_id, step_number, description, status, error_message)
-      VALUES (3, 1, 'Step 1', 'passed', null);
-    `);
-
-    db.close();
+    db.prepare(`
+      INSERT INTO test_cases (run_id, test_id, description, status, duration, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(runId, "test-2", "Test 2", "failed", 1000, Date.now() - 900, Date.now());
   }
 
   test('should initialize database successfully', () => {
