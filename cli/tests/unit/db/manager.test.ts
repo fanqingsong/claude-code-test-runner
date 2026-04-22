@@ -4,29 +4,32 @@ import { DatabaseManager } from "../../../src/db/manager";
 import { getDatabasePath } from "../../../src/db/migrations";
 import type { TestRun, TestCase, TestStep } from "../../../src/db/schema";
 
-const TEST_DB_PATH = "/tmp/test-manager.db";
+const TEST_RESULTS_DIR = "/tmp/.analytics-test";
+const TEST_DB_PATH = getDatabasePath(TEST_RESULTS_DIR);
 
 describe("DatabaseManager", () => {
   let manager: DatabaseManager;
 
   beforeEach(() => {
+    // Clean up database file if it exists
     if (existsSync(TEST_DB_PATH)) {
       unlinkSync(TEST_DB_PATH);
     }
     // Create test results directory
-    const testResultsDir = "/tmp/.analytics";
-    if (!existsSync(testResultsDir)) {
-      require("fs").mkdirSync(testResultsDir, { recursive: true });
+    if (!existsSync(TEST_RESULTS_DIR)) {
+      require("fs").mkdirSync(TEST_RESULTS_DIR, { recursive: true });
     }
-    manager = new DatabaseManager("/tmp");
+    manager = new DatabaseManager(TEST_RESULTS_DIR);
   });
 
   afterEach(() => {
-    if (manager) {
-      manager.close();
-    }
+    // Clean up database file
     if (existsSync(TEST_DB_PATH)) {
       unlinkSync(TEST_DB_PATH);
+    }
+    // Clean up test results directory
+    if (existsSync(TEST_RESULTS_DIR)) {
+      require("fs").rmdirSync(TEST_RESULTS_DIR, { recursive: true });
     }
   });
 

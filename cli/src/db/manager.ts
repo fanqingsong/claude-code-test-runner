@@ -22,35 +22,11 @@ export class DatabaseManager {
     this.db.exec("PRAGMA foreign_keys = ON");
   }
 
-  close(): void {
-    if (this.db) {
-      this.db.close();
-      this.db = null;
-    }
-  }
-
+  
   // Insert test run
   insertTestRun(run: TestRun): number {
     if (!this.db) throw new Error("Database not initialized");
 
-    // First try to find existing run
-    const existingRun = this.db.prepare("SELECT id FROM test_runs WHERE run_id = ?").get(run.run_id);
-
-    if (existingRun) {
-      // Update existing run and return its ID
-      this.db.prepare(`
-        UPDATE test_runs SET
-          start_time = ?, end_time = ?, total_tests = ?, passed = ?, failed = ?,
-          total_duration = ?, environment = ?
-        WHERE run_id = ?
-      `).run(
-        run.start_time, run.end_time, run.total_tests, run.passed, run.failed,
-        run.total_duration, run.environment || null, run.run_id
-      );
-      return existingRun.id;
-    }
-
-    // Insert new run and return its ID
     const stmt = this.db.prepare(`
       INSERT INTO test_runs (run_id, start_time, end_time, total_tests, passed, failed, total_duration, environment, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
