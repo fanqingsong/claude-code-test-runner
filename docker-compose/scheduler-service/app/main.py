@@ -1,0 +1,79 @@
+"""
+Scheduler Service - FastAPI Application
+
+This service manages test execution scheduling and coordination.
+Uses Celery for distributed task queue and Redis for broker.
+"""
+
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.v1.api import api_router
+from app.core.config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    """
+    Lifespan event handler for FastAPI application.
+    Manages application startup and shutdown events.
+    """
+    # Startup
+    print(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    print(f"Celery broker: {settings.CELERY_BROKER_URL}")
+    yield
+    # Shutdown
+    print(f"Shutting down {settings.APP_NAME}")
+
+
+def create_application() -> FastAPI:
+    """
+    Create and configure the FastAPI application.
+
+    Returns:
+        FastAPI: Configured application instance
+    """
+    app = FastAPI(
+        title=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        description="Test Execution Scheduler Service for Claude Code Tests",
+        lifespan=lifespan,
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
+    )
+
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Include API router
+    app.include_router(api_router, prefix="/api/v1")
+
+    @app.get("/")
+    async def root():
+        """Root endpoint with service information."""
+        return {
+            "service": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "status": "running",
+            "type": "scheduler"
+        }
+
+    @app.get("/health")
+    async def health():
+        """Health check endpoint."""
+        return {"status": "healthy"}
+
+    return app
+
+
+app = create_application()
