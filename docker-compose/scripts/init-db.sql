@@ -4,6 +4,22 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  hashed_password VARCHAR(255) NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  is_admin BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for users
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
 -- Test definitions table
 CREATE TABLE IF NOT EXISTS test_definitions (
   id SERIAL PRIMARY KEY,
@@ -126,6 +142,12 @@ CREATE INDEX IF NOT EXISTS idx_test_cases_test_definition ON test_cases(test_def
 CREATE INDEX IF NOT EXISTS idx_schedules_next_run ON schedules(next_run_time) WHERE is_active = true;
 
 -- Insert sample data
+-- Default admin user (password: admin123 - CHANGE THIS IN PRODUCTION!)
+INSERT INTO users (username, email, hashed_password, is_admin) VALUES
+('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYzpLaEmc0i', true)
+ON CONFLICT (username) DO NOTHING;
+
+-- Sample test definition
 INSERT INTO test_definitions (name, test_id, description, url) VALUES
 ('Sample Login Test', 'sample-login-test', 'A sample test for login functionality', 'https://example.com/login')
 ON CONFLICT (test_id) DO NOTHING;

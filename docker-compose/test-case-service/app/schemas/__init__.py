@@ -10,6 +10,13 @@ from app.schemas.test_definition import (
     TestStepUpdate,
     TestVersionSnapshot,
 )
+from app.schemas.auth import (
+    Token,
+    TokenData,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+)
 
 __all__ = [
     "TestDefinitionCreate",
@@ -20,4 +27,9 @@ __all__ = [
     "TestStepResponse",
     "TestStepUpdate",
     "TestVersionSnapshot",
+    "Token",
+    "TokenData",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
 ]
