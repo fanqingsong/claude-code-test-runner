@@ -12,8 +12,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN playwright install --with-deps chromium
+# Install Playwright browsers (without system dependencies due to Debian Trixie compatibility)
+# Note: For production, manually install required system dependencies
+RUN playwright install chromium
 
 # Copy application code
 COPY . .
