@@ -7,7 +7,7 @@ Represents a test case definition with metadata, steps, and versions.
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import ARRAY, Boolean, Integer, String, Text, func
+from sqlalchemy import ARRAY, Boolean, DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -43,14 +43,16 @@ class TestDefinition(Base):
 
     # Metadata
     created_at: Mapped[datetime] = mapped_column(
-        func.now(),
-        nullable=False,
-        default=datetime.utcnow
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        func.now(),
+        DateTime,
         nullable=False,
         default=datetime.utcnow,
+        server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=func.now(),
         onupdate=datetime.utcnow
     )
     created_by: Mapped[str] = mapped_column(String(100), default="system", nullable=False)
