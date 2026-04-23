@@ -31,7 +31,7 @@ function App() {
 
   const handleTestRun = async (testId) => {
     try {
-      const response = await fetch('http://localhost:8012/api/v1/jobs', {
+      const response = await fetch('http://localhost:8012/api/v1/jobs/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ test_definition_ids: [testId] })

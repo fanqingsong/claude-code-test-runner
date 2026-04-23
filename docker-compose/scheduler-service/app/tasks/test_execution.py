@@ -163,7 +163,7 @@ async def _execute_test_async(
 
 async def _execute_step(
     page: Page,
-    step: TestStep,
+    step: "TestStep",
     environment: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
