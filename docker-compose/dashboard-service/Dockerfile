@@ -8,6 +8,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --production
 
+# Build frontend
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm install
+RUN npm run build
+
+WORKDIR /app
+
 # Copy application code
 COPY . .
 
