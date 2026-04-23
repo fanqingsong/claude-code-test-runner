@@ -7,7 +7,7 @@ Represents historical snapshots of test definitions for versioning.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -44,9 +44,10 @@ class TestVersion(Base):
 
     # Metadata
     created_at: Mapped[datetime] = mapped_column(
-        func.now(),
+        DateTime,
         nullable=False,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        server_default=func.now()
     )
     created_by: Mapped[str] = mapped_column(String(100), default="system", nullable=False)
 
