@@ -30,10 +30,6 @@ export class DashboardService {
     // Serve React frontend in production
     if (process.env.NODE_ENV === 'production') {
       this.app.use(express.static(join(process.cwd(), 'frontend/dist')));
-
-      this.app.get('*', (req, res) => {
-        res.sendFile(join(process.cwd(), 'frontend/dist/index.html'));
-      });
     }
 
     // CORS headers
@@ -158,6 +154,13 @@ export class DashboardService {
         res.status(500).json({ error: 'Failed to render dashboard' });
       }
     });
+
+    // Serve React frontend for all other routes in production
+    if (process.env.NODE_ENV === 'production') {
+      this.app.get('*', (req, res) => {
+        res.sendFile(join(process.cwd(), 'frontend/dist/index.html'));
+      });
+    }
 
     // 404 handler
     this.app.use((req, res) => {
