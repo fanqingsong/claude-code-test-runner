@@ -8,7 +8,7 @@ const getAuthHeaders = () => ({
 });
 
 export const getTests = async () => {
-  const response = await fetch(`${TEST_API}/test-definitions`, {
+  const response = await fetch(`${TEST_API}/test-definitions/`, {
     headers: getAuthHeaders()
   });
   if (!response.ok) {
