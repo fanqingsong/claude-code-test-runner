@@ -27,6 +27,15 @@ export class DashboardService {
     this.app.use(express.json());
     this.app.use(express.static(join(process.cwd(), 'public')));
 
+    // Serve React frontend in production
+    if (process.env.NODE_ENV === 'production') {
+      this.app.use(express.static(join(process.cwd(), 'frontend/dist')));
+
+      this.app.get('*', (req, res) => {
+        res.sendFile(join(process.cwd(), 'frontend/dist/index.html'));
+      });
+    }
+
     // CORS headers
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
