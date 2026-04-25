@@ -1,26 +1,22 @@
 function StepEditor({ steps, onChange }) {
-  const stepTypes = ['navigate', 'click', 'fill', 'wait'];
-
   const addStep = () => {
     const newStep = {
-      step_type: 'navigate',
-      selector: '',
-      value: '',
-      order: steps.length + 1
+      id: steps.length + 1,
+      description: ''
     };
     onChange([...steps, newStep]);
   };
 
-  const updateStep = (index, field, value) => {
+  const updateStep = (index, value) => {
     const updatedSteps = [...steps];
-    updatedSteps[index][field] = value;
+    updatedSteps[index].description = value;
     onChange(updatedSteps);
   };
 
   const removeStep = (index) => {
     const updatedSteps = steps.filter((_, i) => i !== index);
-    // Update order numbers
-    updatedSteps.forEach((step, i) => step.order = i + 1);
+    // Update id numbers
+    updatedSteps.forEach((step, i) => step.id = i + 1);
     onChange(updatedSteps);
   };
 
@@ -29,7 +25,7 @@ function StepEditor({ steps, onChange }) {
       <div style={{marginBottom: '12px', fontWeight: 'bold'}}>
         Test Steps ({steps.length})
       </div>
-      
+
       {steps.map((step, index) => (
         <div
           key={index}
@@ -41,71 +37,55 @@ function StepEditor({ steps, onChange }) {
             background: '#fafafa'
           }}
         >
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Step {step.order}
+          <div style={{display: 'flex', alignItems: 'flex-start', gap: '8px'}}>
+            <span style={{
+              background: '#1976d2',
+              color: 'white',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              flexShrink: 0
+            }}>
+              {step.id}
+            </span>
+            <textarea
+              placeholder="Describe what to do in this step (e.g., 'Navigate to example.com', 'Click the login button', 'Enter username: admin')"
+              value={step.description}
+              onChange={(e) => updateStep(index, e.target.value)}
+              rows={2}
+              style={{
+                flex: 1,
+                padding: '8px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                resize: 'vertical',
+                fontSize: '14px'
+              }}
+            />
+            <button
+              onClick={() => removeStep(index)}
+              style={{
+                padding: '4px 8px',
+                background: '#f44336',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                flexShrink: 0
+              }}
+            >
+              Remove
+            </button>
           </div>
-          
-          <select
-            value={step.step_type}
-            onChange={(e) => updateStep(index, 'step_type', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px',
-              marginBottom: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          >
-            {stepTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          
-          <input
-            type="text"
-            placeholder="Selector (optional for navigate, wait)"
-            value={step.selector}
-            onChange={(e) => updateStep(index, 'selector', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px',
-              marginBottom: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-          
-          <input
-            type="text"
-            placeholder="Value"
-            value={step.value}
-            onChange={(e) => updateStep(index, 'value', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px',
-              marginBottom: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-          
-          <button
-            onClick={() => removeStep(index)}
-            style={{
-              padding: '4px 8px',
-              background: '#f44336',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Remove
-          </button>
         </div>
       ))}
-      
+
       <button
         onClick={addStep}
         style={{

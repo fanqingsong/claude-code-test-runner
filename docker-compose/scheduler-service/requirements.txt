@@ -32,3 +32,6 @@ httpx==0.26.0
 
 # Utilities
 python-dotenv==1.0.0
+
+# Claude AI SDK
+anthropic==0.18.1

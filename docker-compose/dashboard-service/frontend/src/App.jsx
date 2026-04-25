@@ -9,6 +9,8 @@ function App() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingTest, setEditingTest] = useState(null);
 
   const loadTests = async () => {
     setLoading(true);
@@ -23,12 +25,35 @@ function App() {
     }
   };
 
+  // 从hash初始化视图
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // 去掉#号
+    if (hash === 'tests' || hash === 'dashboard') {
+      setCurrentView(hash);
+    }
+  }, []);
+
+  // 监听hash变化
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash === 'tests' || hash === 'dashboard') {
+        setCurrentView(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   useEffect(() => {
     loadTests();
   }, []);
 
   const handleTestCreated = () => {
     loadTests();
+    setShowCreateForm(false);
+    setEditingTest(null);
   };
 
   const handleTestRun = async (testId) => {
@@ -47,6 +72,16 @@ function App() {
     } catch (err) {
       alert('Error starting test: ' + err.message);
     }
+  };
+
+  const handleEditTest = (test) => {
+    setEditingTest(test);
+    setShowCreateForm(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTest(null);
+    setShowCreateForm(false);
   };
 
   const navStyle = {
@@ -73,13 +108,13 @@ function App() {
       {/* 导航栏 */}
       <nav style={navStyle}>
         <button
-          onClick={() => setCurrentView('dashboard')}
+          onClick={() => window.location.hash = 'dashboard'}
           style={navButtonStyle(currentView === 'dashboard')}
         >
           📊 仪表板
         </button>
         <button
-          onClick={() => setCurrentView('tests')}
+          onClick={() => window.location.hash = 'tests'}
           style={navButtonStyle(currentView === 'tests')}
         >
           🧪 测试管理
@@ -92,18 +127,78 @@ function App() {
           <DashboardView />
         ) : (
           <div style={{display: 'flex', minHeight: 'calc(100vh - 57px)'}}>
-            <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd'}}>
+            <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd', position: 'relative'}}>
+              {/* 创建测试按钮 */}
+              <button
+                onClick={() => {
+                  setEditingTest(null);
+                  setShowCreateForm(!showCreateForm);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  padding: '8px 16px',
+                  background: showCreateForm ? '#f44336' : '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  zIndex: 10,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              >
+                {showCreateForm ? '✕ 取消' : (editingTest ? '✏️ 编辑中' : '+ 创建测试')}
+              </button>
+
               {loading ? (
                 <div>Loading tests...</div>
               ) : error ? (
                 <div style={{color: 'red'}}>{error}</div>
               ) : (
-                <TestList tests={tests} onRunTest={handleTestRun} />
+                <TestList
+                  tests={tests}
+                  onRunTest={handleTestRun}
+                  onEditTest={handleEditTest}
+                />
               )}
             </div>
-            <div style={{flex: '2', padding: '20px', background: '#f5f5f5'}}>
-              <TestForm onTestCreated={handleTestCreated} />
-            </div>
+
+            {/* 创建/编辑测试表单 - 可收缩 */}
+            {showCreateForm && (
+              <div style={{
+                flex: '2',
+                padding: '20px',
+                background: '#f5f5f5',
+                borderLeft: editingTest ? '3px solid #ff9800' : '3px solid #4caf50',
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 57px)'
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                  <h2 style={{margin: 0, color: editingTest ? '#ff9800' : '#4caf50'}}>
+                    {editingTest ? `✏️ 编辑测试: ${editingTest.name}` : '创建新测试'}
+                  </h2>
+                  <button
+                    onClick={handleCancelEdit}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      color: '#666'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <TestForm
+                  onTestCreated={handleTestCreated}
+                  editingTest={editingTest}
+                  onCancel={handleCancelEdit}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

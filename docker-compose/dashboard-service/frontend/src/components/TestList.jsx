@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import TestCard from './TestCard';
 import TestRunModal from './TestRunModal';
+import TestDetailModal from './TestDetailModal';
+import RunHistoryModal from './RunHistoryModal';
 
-function TestList({ tests, onRunTest }) {
+function TestList({ tests, onRunTest, onEditTest }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
-  const [runningJob, setRunningJob] = useState(null); // { jobId, testInfo }
+  const [runningJob, setRunningJob] = useState(null);
+  const [detailTest, setDetailTest] = useState(null);
+  const [historyTest, setHistoryTest] = useState(null);
 
   const filteredTests = tests.filter(test => {
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -16,26 +20,22 @@ function TestList({ tests, onRunTest }) {
 
   const allTags = [...new Set(tests.flatMap(t => t.tags || []))];
 
-  const handleTestRun = async (testId, testName) => {
+  const handleTestRun = async (testId) => {
     try {
-      // 验证testId
-      console.log('Original testId:', testId, 'Type:', typeof testId);
+      console.log('Starting test with ID:', testId);
 
       if (!testId) {
-        console.error('testId is null or undefined');
         alert('测试ID无效，无法启动测试');
         return null;
       }
 
       const numericTestId = parseInt(testId);
       if (isNaN(numericTestId)) {
-        console.error('testId is not a valid number:', testId);
         alert('测试ID格式无效');
         return null;
       }
 
       const requestData = { test_definition_ids: [numericTestId] };
-      console.log('Starting test with data:', requestData);
 
       const response = await fetch('http://localhost:8012/api/v1/jobs/', {
         method: 'POST',
@@ -47,28 +47,23 @@ function TestList({ tests, onRunTest }) {
         body: JSON.stringify(requestData)
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
         const job = await response.json();
-        console.log('Job created successfully:', job);
+        const test = tests.find(t => t.id === testId);
 
         // 显示运行状态模态框
         setRunningJob({
           jobId: job.job_id,
-          testInfo: { name: testName, id: testId }
+          testInfo: { name: test?.name || 'Unknown', id: testId }
         });
 
         return job;
       } else {
         const errorText = await response.text();
-        console.error('Failed to start test. Status:', response.status);
-        console.error('Error response:', errorText);
         alert(`启动测试失败: ${response.status} ${response.statusText}\n详情: ${errorText}`);
         return null;
       }
     } catch (err) {
-      console.error('Error starting test:', err);
       alert('启动测试时出错: ' + err.message);
       return null;
     }
@@ -76,6 +71,14 @@ function TestList({ tests, onRunTest }) {
 
   const handleCloseModal = () => {
     setRunningJob(null);
+  };
+
+  const handleViewDetails = (test) => {
+    setDetailTest(test);
+  };
+
+  const handleViewRunHistory = (test) => {
+    setHistoryTest(test);
   };
 
   return (
@@ -136,7 +139,6 @@ function TestList({ tests, onRunTest }) {
         <p style={{color: '#666'}}>No tests found</p>
       ) : (
         filteredTests.map(test => {
-          // 确保test.id存在且有效
           if (!test.id) {
             console.warn('Test missing id:', test);
             return null;
@@ -145,7 +147,10 @@ function TestList({ tests, onRunTest }) {
             <TestCard
               key={test.id}
               test={test}
-              onRun={(testId) => handleTestRun(testId, test.name)}
+              onRun={handleTestRun}
+              onViewDetails={handleViewDetails}
+              onViewRunHistory={handleViewRunHistory}
+              onEdit={onEditTest}
             />
           );
         })
@@ -157,6 +162,23 @@ function TestList({ tests, onRunTest }) {
           jobId={runningJob.jobId}
           testInfo={runningJob.testInfo}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {/* Test Detail Modal */}
+      {detailTest && (
+        <TestDetailModal
+          test={detailTest}
+          onClose={() => setDetailTest(null)}
+          onViewRunHistory={handleViewRunHistory}
+        />
+      )}
+
+      {/* Run History Modal */}
+      {historyTest && (
+        <RunHistoryModal
+          test={historyTest}
+          onClose={() => setHistoryTest(null)}
         />
       )}
     </div>

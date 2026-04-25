@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     SCREENSHOT_DIR: str = Field(default="/app/screenshots", description="Screenshot directory")
     TEST_TIMEOUT: int = Field(default=300000, description="Test execution timeout in milliseconds")
 
+    # Claude AI / GLM Compatible API
+    ANTHROPIC_API_KEY: str = Field(default="", description="API key for Claude/GLM integration")
+    ANTHROPIC_BASE_URL: str = Field(default="https://api.anthropic.com", description="Base URL for Claude/GLM API")
+    API_TIMEOUT_MS: int = Field(default=300000, description="API timeout in milliseconds")
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
