@@ -7,7 +7,7 @@ Represents a static group of test definitions that can be scheduled together.
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import ARRAY, DateTime, Integer, String, Text
+from sqlalchemy import ARRAY, DateTime, func, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,21 +33,23 @@ class TestSuite(Base):
     test_definition_ids: Mapped[List[int]] = mapped_column(
         ARRAY(Integer),
         nullable=False,
-        default=[]
+        default=list
     )
 
     # Metadata
-    tags: Mapped[dict] = mapped_column(JSONB, default={}, nullable=False)
+    tags: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        server_default=func.now()
     )
     created_by: Mapped[str] = mapped_column(String(100), default="system", nullable=False)
 
