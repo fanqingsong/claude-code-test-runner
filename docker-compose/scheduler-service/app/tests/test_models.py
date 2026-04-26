@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.test_suite import TestSuite
 from app.models.schedule import Schedule
+from app.models.test_run import TestRun
 
 
 @pytest.mark.asyncio
@@ -85,4 +86,56 @@ async def test_schedule_suite_type(db_session: AsyncSession):
 
     assert schedule.schedule_type == "suite"
     assert schedule.environment_overrides["BASE_URL"] == "https://staging.example.com"
+
+
+@pytest.mark.asyncio
+async def test_create_test_run(db_session: AsyncSession):
+    """Test creating a test run"""
+    run = TestRun(
+        schedule_id=1,
+        test_definition_id=1,
+        run_id="schedule_1_test_1_1234567890",
+        status="passed",
+        start_time=datetime.utcnow(),
+        end_time=datetime.utcnow(),
+        total_duration_ms=45000,
+        total_tests=10,
+        passed=10,
+        failed=0,
+        skipped=0
+    )
+
+    db_session.add(run)
+    await db_session.commit()
+    await db_session.refresh(run)
+
+    assert run.id is not None
+    assert run.status == "passed"
+    assert run.total_tests == 10
+    assert run.passed == 10
+    assert run.failed == 0
+
+
+@pytest.mark.asyncio
+async def test_test_run_with_failure(db_session: AsyncSession):
+    """Test test run with failure details"""
+    run = TestRun(
+        schedule_id=1,
+        run_id="failed_run_123",
+        status="failed",
+        error_message="Element not found: #submit-button",
+        test_cases=[
+            {"step_number": 1, "status": "passed"},
+            {"step_number": 2, "status": "failed", "error": "Element not found"}
+        ]
+    )
+
+    db_session.add(run)
+    await db_session.commit()
+
+    assert run.status == "failed"
+    assert run.error_message is not None
+    assert run.test_cases is not None
+    assert len(run.test_cases) == 2
+
 
