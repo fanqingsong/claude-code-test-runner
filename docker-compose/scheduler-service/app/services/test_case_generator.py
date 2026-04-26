@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.schemas.test_generation import (
@@ -255,7 +256,7 @@ Important:
         self,
         test_case: GeneratedTestCase,
         request: TestCaseGenerateRequest,
-        db: AsyncSession
+        db: Optional[Any]
     ) -> int:
         """Save generated test case to database via API."""
 
