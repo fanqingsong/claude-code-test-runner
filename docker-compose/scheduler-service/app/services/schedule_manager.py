@@ -5,7 +5,7 @@ Manages synchronization between database schedules and Celery Beat.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from croniter import croniter
@@ -63,7 +63,7 @@ class ScheduleManager:
         """
         try:
             # Try to create a croniter instance
-            base_time = datetime.utcnow()
+            base_time = datetime.now(timezone.utc)
             croniter(cron_expression, base_time)
             return True
         except (ValueError, KeyError):
@@ -77,11 +77,12 @@ class ScheduleManager:
             schedule: Schedule object to update
         """
         try:
-            cron = croniter(schedule.cron_expression, datetime.utcnow())
+            cron = croniter(schedule.cron_expression, datetime.now(timezone.utc))
             next_time = cron.get_next(datetime)
             schedule.next_run_time = next_time
             await self.db.commit()
         except Exception as e:
+            await self.db.rollback()
             logger.error(f"Failed to calculate next run time for schedule {schedule.id}: {e}")
             raise
 
