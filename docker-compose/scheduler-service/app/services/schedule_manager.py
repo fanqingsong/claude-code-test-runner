@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from croniter import croniter
-from celery.schedules import Crontab
+from celery.schedules import crontab
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
