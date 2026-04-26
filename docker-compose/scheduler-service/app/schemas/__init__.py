@@ -14,6 +14,16 @@ from app.schemas.schedules import (
     SchedulePreset,
     ScheduleTriggerResponse
 )
+from app.schemas.test_generation import (
+    TestCaseGenerateRequest,
+    TestCaseGenerateResponse,
+    BatchGenerateRequest,
+    BatchGenerateResponse,
+    GeneratedTestCase,
+    GeneratedTestStep,
+    PromptTemplate,
+    GenerationOptions
+)
 
 __all__ = [
     "TestSuiteCreate",
@@ -25,5 +35,13 @@ __all__ = [
     "ScheduleToggle",
     "SchedulePreset",
     "SchedulePresetsResponse",
-    "ScheduleTriggerResponse"
+    "ScheduleTriggerResponse",
+    "TestCaseGenerateRequest",
+    "TestCaseGenerateResponse",
+    "BatchGenerateRequest",
+    "BatchGenerateResponse",
+    "GeneratedTestCase",
+    "GeneratedTestStep",
+    "PromptTemplate",
+    "GenerationOptions"
 ]

@@ -6,7 +6,7 @@ Aggregates all API endpoint routers.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import jobs, schedules, test_suites
+from app.api.v1.endpoints import jobs, schedules, test_suites, test_generation
 
 api_router = APIRouter()
 
@@ -27,4 +27,10 @@ api_router.include_router(
     test_suites.router,
     prefix="/test-suites",
     tags=["test-suites"]
+)
+
+api_router.include_router(
+    test_generation.router,
+    prefix="/test-generation",
+    tags=["test-generation"]
 )
