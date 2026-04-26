@@ -98,7 +98,37 @@ services:
       context: ./scheduler-service
       dockerfile: Dockerfile
     container_name: cc-test-scheduler-worker
-    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2 -Q test_execution
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2 -Q test_execution,schedule_sync
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    restart: unless-stopped
+
+  scheduler-beat:
+    build:
+      context: ./scheduler-service
+      dockerfile: Dockerfile
+    container_name: cc-test-scheduler-beat
+    command: celery -A app.tasks.schedule_sync beat --loglevel=info --scheduler app.tasks.schedule_sync:setup_beat_schedule
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
