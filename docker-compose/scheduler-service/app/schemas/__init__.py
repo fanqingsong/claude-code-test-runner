@@ -5,9 +5,24 @@ from app.schemas.test_suites import (
     TestSuiteUpdate,
     TestSuiteResponse
 )
+from app.schemas.schedules import (
+    ScheduleCreate,
+    ScheduleUpdate,
+    ScheduleResponse,
+    ScheduleToggle,
+    SchedulePresetsResponse,
+    SchedulePreset,
+    ScheduleTriggerResponse
+)
 
 __all__ = [
     "TestSuiteCreate",
     "TestSuiteUpdate",
-    "TestSuiteResponse"
+    "TestSuiteResponse",
+    "ScheduleCreate",
+    "ScheduleUpdate",
+    "ScheduleResponse",
+    "ScheduleToggle",
+    "SchedulePresetsResponse",
+    "ScheduleTriggerResponse"
 ]
