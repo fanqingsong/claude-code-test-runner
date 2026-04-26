@@ -23,6 +23,7 @@ __all__ = [
     "ScheduleUpdate",
     "ScheduleResponse",
     "ScheduleToggle",
+    "SchedulePreset",
     "SchedulePresetsResponse",
     "ScheduleTriggerResponse"
 ]
