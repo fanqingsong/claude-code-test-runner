@@ -7,10 +7,8 @@ AI-powered test case generation from natural language requirements.
 from typing import List
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status
 
-from app.core.database import get_db
 from app.schemas.test_generation import (
     TestCaseGenerateRequest,
     TestCaseGenerateResponse,
@@ -27,8 +25,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("/generate", response_model=TestCaseGenerateResponse, status_code=status.HTTP_201_CREATED)
 async def generate_test_case(
-    request: TestCaseGenerateRequest,
-    db: AsyncSession = Depends(get_db)
+    request: TestCaseGenerateRequest
 ):
     """
     Generate a test case from natural language requirements.
@@ -47,7 +44,7 @@ async def generate_test_case(
         Generated test case with steps saved to database
     """
     try:
-        result = await test_case_generator.generate_test_case(request, db)
+        result = await test_case_generator.generate_test_case(request)
         return result
     except ValueError as e:
         raise HTTPException(
@@ -64,8 +61,7 @@ async def generate_test_case(
 
 @router.post("/generate-batch", response_model=BatchGenerateResponse)
 async def generate_test_cases_batch(
-    batch_request: BatchGenerateRequest,
-    db: AsyncSession = Depends(get_db)
+    batch_request: BatchGenerateRequest
 ):
     """
     Generate multiple test cases in batch.
@@ -98,7 +94,7 @@ async def generate_test_cases_batch(
             )
             requests.append(request)
 
-        result = await test_case_generator.generate_batch(requests, db)
+        result = await test_case_generator.generate_batch(requests)
 
         return BatchGenerateResponse(
             generated_tests=result["generated_tests"],

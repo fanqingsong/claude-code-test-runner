@@ -9,15 +9,10 @@ import logging
 import re
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-import uuid
 
 import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.core.config import settings
-from app.models.test_definition import TestDefinition
-from app.models.test_step import TestStep
 from app.schemas.test_generation import (
     TestCaseGenerateRequest,
     GeneratedTestCase,
@@ -43,15 +38,13 @@ class TestCaseGenerator:
 
     async def generate_test_case(
         self,
-        request: TestCaseGenerateRequest,
-        db: AsyncSession
+        request: TestCaseGenerateRequest
     ) -> Dict[str, Any]:
         """
         Generate a complete test case from requirements.
 
         Args:
             request: Test generation request
-            db: Database session
 
         Returns:
             dict: Generated test case with metadata
@@ -66,7 +59,7 @@ class TestCaseGenerator:
         generated_case = self._parse_ai_response(ai_response, request)
 
         # Save to database
-        test_def_id = await self._save_to_database(generated_case, request, db)
+        test_def_id = await self._save_to_database(generated_case, request, None)
 
         return {
             "test_definition_id": test_def_id,
@@ -264,53 +257,70 @@ Important:
         request: TestCaseGenerateRequest,
         db: AsyncSession
     ) -> int:
-        """Save generated test case to database."""
+        """Save generated test case to database via API."""
 
-        # Create TestDefinition
-        test_def = TestDefinition(
-            name=test_case.name,
-            description=test_case.description,
-            test_id=test_case.test_id,
-            url=test_case.url,
-            tags=test_case.tags,
-            environment=request.credentials or {},
-            created_by="ai-generator",
-            version=1,
-            is_active=True
-        )
+        # Prepare test definition data
+        test_def_data = {
+            "name": test_case.name,
+            "description": test_case.description,
+            "test_id": test_case.test_id,
+            "url": test_case.url,
+            "tags": test_case.tags,
+            "environment": request.credentials or {},
+            "is_active": True
+        }
 
-        db.add(test_case)
-        await db.flush()  # Get the ID without committing
+        # Prepare test steps data
+        test_steps_data = [
+            {
+                "step_number": step.step_number,
+                "description": step.description,
+                "type": step.type,
+                "params": step.params,
+                "expected_result": step.expected_result
+            }
+            for step in test_case.steps
+        ]
 
-        # Create TestSteps
-        for step_data in test_case.steps:
-            step = TestStep(
-                test_definition_id=test_def.id,
-                step_number=step_data.step_number,
-                description=step_data.description,
-                type=step_data.type,
-                params=step_data.params,
-                expected_result=step_data.expected_result
-            )
-            db.add(step)
+        try:
+            # Call test-case-service API
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Create test definition
+                response = await client.post(
+                    "http://test-case-service:8001/api/v1/test-definitions/",
+                    json=test_def_data
+                )
+                response.raise_for_status()
+                result = response.json()
+                test_def_id = result.get("id")
 
-        await db.commit()
-        await db.refresh(test_def)
+                # Create test steps
+                for step_data in test_steps_data:
+                    step_response = await client.post(
+                        f"http://test-case-service:8001/api/v1/test-steps/test-definition/{test_def_id}",
+                        json=step_data
+                    )
+                    step_response.raise_for_status()
 
-        logger.info(f"Created test definition {test_def.id} with {len(test_case.steps)} steps")
-        return test_def.id
+            logger.info(f"Created test definition {test_def_id} with {len(test_steps_data)} steps")
+            return test_def_id
+
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error saving to database: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Error saving to database: {str(e)}")
+            raise
 
     async def generate_batch(
         self,
-        requests: List[TestCaseGenerateRequest],
-        db: AsyncSession
+        requests: List[TestCaseGenerateRequest]
     ) -> Dict[str, Any]:
         """
         Generate multiple test cases in batch.
 
         Args:
             requests: List of test generation requests
-            db: Database session
 
         Returns:
             dict: Batch generation results
@@ -320,7 +330,7 @@ Important:
 
         for idx, req in enumerate(requests):
             try:
-                result = await self.generate_test_case(req, db)
+                result = await self.generate_test_case(req)
                 generated.append(result)
             except Exception as e:
                 logger.error(f"Failed to generate test case {idx}: {str(e)}")
