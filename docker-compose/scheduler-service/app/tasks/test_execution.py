@@ -6,9 +6,12 @@ Celery tasks for executing AI-powered tests using natural language.
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from celery import Task
 from playwright.async_api import async_playwright, Browser, Page, BrowserContext
@@ -16,9 +19,11 @@ from playwright.async_api import async_playwright, Browser, Page, BrowserContext
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.services.claude_interpreter import claude_interpreter
+from app.services.execution_service import execution_service
 
 
-@celery_app.task(bind=True, name="app.tasks.test_execution.execute_test")
+@celery_app.task(bind=True, name="app.tasks.test_execution.execute_test",
+                 autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[str, Any] = None):
     """
     Execute a test definition using AI-powered natural language processing.
@@ -31,6 +36,28 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
     Returns:
         dict: Test execution results
     """
+    # Update test run status to running
+    try:
+        async def update_status():
+            async_engine = create_async_engine(settings.DATABASE_URL)
+            async_session_maker = sessionmaker(
+                async_engine, class_=AsyncSession, expire_on_commit=False
+            )
+
+            async with async_session_maker() as db:
+                await execution_service.update_run_status(run_id, "running", db)
+                await async_engine.dispose()
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(update_status())
+        finally:
+            loop.close()
+    except Exception as e:
+        # Log but don't fail the task
+        print(f"Warning: Failed to update test run status: {str(e)}")
+
     # Run async test execution in event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -38,7 +65,54 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
         result = loop.run_until_complete(
             _execute_test_async(test_definition_id, run_id, environment or {})
         )
+
+        # Update final status
+        try:
+            async def update_final_status():
+                async_engine = create_async_engine(settings.DATABASE_URL)
+                async_session_maker = sessionmaker(
+                    async_engine, class_=AsyncSession, expire_on_commit=False
+                )
+
+                async with async_session_maker() as db:
+                    final_status = "completed" if result.get("status") == "passed" else "failed"
+                    await execution_service.update_run_status(run_id, final_status, db)
+                    await async_engine.dispose()
+
+            loop2 = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop2)
+            try:
+                loop2.run_until_complete(update_final_status())
+            finally:
+                loop2.close()
+        except Exception as e:
+            print(f"Warning: Failed to update final test run status: {str(e)}")
+
         return result
+    except Exception as e:
+        # Update status to failed on error
+        try:
+            async def update_error_status():
+                async_engine = create_async_engine(settings.DATABASE_URL)
+                async_session_maker = sessionmaker(
+                    async_engine, class_=AsyncSession, expire_on_commit=False
+                )
+
+                async with async_session_maker() as db:
+                    await execution_service.update_run_status(run_id, "failed", db)
+                    await async_engine.dispose()
+
+            loop2 = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop2)
+            try:
+                loop2.run_until_complete(update_error_status())
+            finally:
+                loop2.close()
+        except Exception as e2:
+            print(f"Warning: Failed to update error status: {str(e2)}")
+
+        # Re-raise exception for Celery retry logic
+        raise
     finally:
         loop.close()
 
@@ -145,7 +219,7 @@ async def _execute_test_async(
         }
 
     # Execute test using AI interpretation
-    start_time = datetime.utcnow().timestamp() * 1000  # milliseconds
+    start_time = datetime.now(timezone.utc).timestamp() * 1000  # milliseconds
     test_results = []
 
     try:
@@ -196,7 +270,7 @@ async def _execute_test_async(
             "run_id": run_id
         }
 
-    end_time = datetime.utcnow().timestamp() * 1000  # milliseconds
+    end_time = datetime.now(timezone.utc).timestamp() * 1000  # milliseconds
     total_duration = end_time - start_time
 
     # Calculate summary
@@ -204,7 +278,7 @@ async def _execute_test_async(
     failed = sum(1 for r in test_results if r["status"] == "failed")
     total = len(test_results)
 
-    return {
+    result = {
         "run_id": run_id,
         "test_definition_id": test_definition_id,
         "start_time": start_time,
@@ -217,6 +291,24 @@ async def _execute_test_async(
         "status": "passed" if failed == 0 else "failed",
         "test_cases": test_results
     }
+
+    # Save results to database if this is a scheduled run
+    # We need to use async engine for this
+    try:
+        async_engine = create_async_engine(settings.DATABASE_URL)
+        async_session_maker = sessionmaker(
+            async_engine, class_=AsyncSession, expire_on_commit=False
+        )
+
+        async with async_session_maker() as db:
+            # Try to find and update the test run
+            await execution_service.save_test_results(run_id, result, db)
+            await async_engine.dispose()
+    except Exception as e:
+        # Log but don't fail the task if database update fails
+        print(f"Warning: Failed to save test results to database: {str(e)}")
+
+    return result
 
 
 async def _execute_step_with_ai(
@@ -235,7 +327,7 @@ async def _execute_step_with_ai(
     Returns:
         dict: Step execution result
     """
-    step_start = datetime.utcnow().timestamp() * 1000
+    step_start = datetime.now(timezone.utc).timestamp() * 1000
 
     description = step.get("description", "").strip()
 
