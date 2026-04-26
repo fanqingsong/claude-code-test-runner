@@ -7,9 +7,11 @@ import pytest
 from typing import AsyncGenerator, Generator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from httpx import AsyncClient, ASGITransport
 
 from app.core.database import Base
 from app.models.test_suite import TestSuite
+from app.main import app
 
 
 # Test database URL (in-memory SQLite for tests)
@@ -55,3 +57,13 @@ async def db_session(engine) -> AsyncGenerator[AsyncSession, None]:
 
     async with async_session_maker() as session:
         yield session
+
+
+@pytest.fixture(scope="function")
+async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Create async HTTP client for testing API endpoints."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        yield client
