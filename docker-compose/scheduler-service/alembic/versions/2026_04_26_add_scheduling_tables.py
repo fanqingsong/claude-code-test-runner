@@ -6,9 +6,11 @@ Create Date: 2026-04-26
 
 """
 from typing import Sequence, Union
+from datetime import datetime
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -26,10 +28,10 @@ def upgrade() -> None:
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('test_definition_ids', sa.ARRAY(sa.Integer()), nullable=False),
-        sa.Column('tags', sa.JSON(), nullable=True, server_default='{}'),
+        sa.Column('tags', postgresql.JSONB(), nullable=True, server_default='{}'),
         sa.Column('created_at', sa.DateTime(), nullable=True, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=True, server_default=sa.text('now()')),
-        sa.Column('created_by', sa.String(length=100), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True, server_default=sa.text('now()'), onupdate=sa.text('now()')),
+        sa.Column('created_by', sa.String(length=100), nullable=True, server_default='system'),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_test_suites_id'), 'test_suites', ['id'])
@@ -46,16 +48,16 @@ def upgrade() -> None:
         sa.Column('preset_type', sa.String(length=50), nullable=True),
         sa.Column('cron_expression', sa.String(length=100), nullable=False),
         sa.Column('timezone', sa.String(length=50), nullable=True, server_default='UTC'),
-        sa.Column('environment_overrides', sa.JSON(), nullable=True, server_default='{}'),
-        sa.Column('is_active', sa.Boolean(), nullable=True, server_default='true'),
-        sa.Column('allow_concurrent', sa.Boolean(), nullable=True, server_default='false'),
-        sa.Column('max_retries', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('retry_interval_seconds', sa.Integer(), nullable=True, server_default='60'),
+        sa.Column('environment_overrides', postgresql.JSONB(), nullable=True, server_default='{}'),
+        sa.Column('is_active', sa.Boolean(), nullable=True, server_default=sa.text('true')),
+        sa.Column('allow_concurrent', sa.Boolean(), nullable=True, server_default=sa.text('false')),
+        sa.Column('max_retries', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('retry_interval_seconds', sa.Integer(), nullable=True, server_default=sa.text('60')),
         sa.Column('next_run_time', sa.DateTime(), nullable=True),
         sa.Column('last_run_time', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=True, server_default=sa.text('now()')),
-        sa.Column('created_by', sa.String(length=100), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True, server_default=sa.text('now()'), onupdate=sa.text('now()')),
+        sa.Column('created_by', sa.String(length=100), nullable=True, server_default='system'),
         sa.ForeignKeyConstraint(['test_suite_id'], ['test_suites.id']),
         sa.PrimaryKeyConstraint('id')
     )
@@ -74,14 +76,14 @@ def upgrade() -> None:
         sa.Column('start_time', sa.DateTime(), nullable=True),
         sa.Column('end_time', sa.DateTime(), nullable=True),
         sa.Column('total_duration_ms', sa.BigInteger(), nullable=True),
-        sa.Column('total_tests', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('passed', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('failed', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('skipped', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('test_cases', sa.JSON(), nullable=True),
+        sa.Column('total_tests', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('passed', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('failed', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('skipped', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('test_cases', postgresql.JSONB(), nullable=True),
         sa.Column('error_message', sa.Text(), nullable=True),
-        sa.Column('retry_count', sa.Integer(), nullable=True, server_default='0'),
-        sa.Column('is_retry', sa.Boolean(), nullable=True, server_default='false'),
+        sa.Column('retry_count', sa.Integer(), nullable=True, server_default=sa.text('0')),
+        sa.Column('is_retry', sa.Boolean(), nullable=True, server_default=sa.text('false')),
         sa.Column('created_at', sa.DateTime(), nullable=True, server_default=sa.text('now()')),
         sa.ForeignKeyConstraint(['schedule_id'], ['schedules.id']),
         sa.PrimaryKeyConstraint('id'),
