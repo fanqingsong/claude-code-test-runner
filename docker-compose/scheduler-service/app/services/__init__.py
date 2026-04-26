@@ -1,6 +1,6 @@
+from app.core.celery_app import celery_app
 from app.services.schedule_manager import ScheduleManager
 from app.services.execution_service import ExecutionService
-from app.core.celery_app import celery_app
 
 # Create service instances
 schedule_manager = ScheduleManager(celery_app)
