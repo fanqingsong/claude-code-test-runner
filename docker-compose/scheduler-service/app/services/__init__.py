@@ -11,6 +11,7 @@ def get_schedule_manager():
     global _schedule_manager
     if _schedule_manager is None:
         from app.services.schedule_manager import ScheduleManager
+        from app.core.celery_app import celery_app
         _schedule_manager = ScheduleManager(celery_app)
     return _schedule_manager
 
