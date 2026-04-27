@@ -128,7 +128,7 @@ services:
       context: ./scheduler-service
       dockerfile: Dockerfile
     container_name: cc-test-scheduler-beat
-    command: celery -A app.tasks.schedule_sync beat --loglevel=info --scheduler app.tasks.schedule_sync:setup_beat_schedule
+    command: celery -A app.core.celery_app beat --loglevel=info
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0

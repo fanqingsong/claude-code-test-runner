@@ -25,8 +25,7 @@ from app.schemas.schedules import (
     SchedulePreset,
     ScheduleTriggerResponse
 )
-from app.services.schedule_manager import schedule_manager
-from app.services.execution_service import execution_service
+from app.services import get_schedule_manager, get_execution_service
 
 router = APIRouter()
 
@@ -111,7 +110,7 @@ async def create_schedule(
 
     # Validate cron expression
     try:
-        schedule_manager.validate_cron(schedule_data.cron_expression)
+        get_schedule_manager().validate_cron(schedule_data.cron_expression)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -120,7 +119,7 @@ async def create_schedule(
 
     # Calculate next run time
     try:
-        next_run_time = schedule_manager.parse_cron_expression(
+        next_run_time = get_schedule_manager().parse_cron_expression(
             schedule_data.cron_expression,
             schedule_data.timezone
         )
@@ -156,7 +155,7 @@ async def create_schedule(
     # Sync to Celery Beat
     if schedule.is_active:
         try:
-            await schedule_manager.sync_schedules(db)
+            await get_schedule_manager().sync_schedules(db)
         except Exception as e:
             # Log but don't fail the request
             pass
@@ -303,7 +302,7 @@ async def update_schedule(
     # Validate cron expression if provided
     if "cron_expression" in update_data:
         try:
-            schedule_manager.validate_cron(update_data["cron_expression"])
+            get_schedule_manager().validate_cron(update_data["cron_expression"])
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -313,7 +312,7 @@ async def update_schedule(
         # Recalculate next run time
         timezone_val = update_data.get("timezone", schedule.timezone)
         try:
-            update_data["next_run_time"] = schedule_manager.parse_cron_expression(
+            update_data["next_run_time"] = get_schedule_manager().parse_cron_expression(
                 update_data["cron_expression"],
                 timezone_val
             )
@@ -356,7 +355,7 @@ async def update_schedule(
 
     # Sync to Celery Beat
     try:
-        await schedule_manager.sync_schedules(db)
+        await get_schedule_manager().sync_schedules(db)
     except Exception as e:
         # Log but don't fail the request
         pass
@@ -395,7 +394,7 @@ async def toggle_schedule(
 
     # Sync to Celery Beat
     try:
-        await schedule_manager.sync_schedules(db)
+        await get_schedule_manager().sync_schedules(db)
     except Exception as e:
         # Log but don't fail the request
         pass
@@ -425,7 +424,7 @@ async def trigger_schedule(
         )
 
     # Check execution limits
-    can_execute = await execution_service.check_execution_limit(schedule, db)
+    can_execute = await get_execution_service().check_execution_limit(schedule, db)
     if not can_execute:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -434,7 +433,7 @@ async def trigger_schedule(
 
     # Resolve target test definitions
     try:
-        test_definition_ids = await execution_service.resolve_target_tests(schedule, db)
+        test_definition_ids = await get_execution_service().resolve_target_tests(schedule, db)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -451,10 +450,10 @@ async def trigger_schedule(
     run_id = str(uuid.uuid4())
 
     # Build environment
-    environment = execution_service.build_environment(schedule)
+    environment = get_execution_service().build_environment(schedule)
 
     # Create test run record
-    await execution_service.create_test_run(
+    await get_execution_service().create_test_run(
         schedule_id=schedule.id,
         run_id=run_id,
         test_definition_ids=test_definition_ids,
@@ -566,7 +565,7 @@ async def delete_schedule(
 
     # Sync to Celery Beat
     try:
-        await schedule_manager.sync_schedules(db)
+        await get_schedule_manager().sync_schedules(db)
     except Exception as e:
         # Log but don't fail the request
         pass

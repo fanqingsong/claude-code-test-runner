@@ -388,7 +388,3 @@ Important:
                 variables=["requirements"]
             )
         }
-
-
-# Global instance
-test_case_generator = TestCaseGenerator()

@@ -17,7 +17,7 @@ from app.schemas.test_generation import (
     PromptTemplate,
     GenerationOptions
 )
-from app.services.test_case_generator import test_case_generator
+from app.services import get_test_case_generator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ async def generate_test_case(
         Generated test case with steps saved to database
     """
     try:
-        result = await test_case_generator.generate_test_case(request)
+        result = await get_test_case_generator().generate_test_case(request)
         return result
     except ValueError as e:
         raise HTTPException(
@@ -94,7 +94,7 @@ async def generate_test_cases_batch(
             )
             requests.append(request)
 
-        result = await test_case_generator.generate_batch(requests)
+        result = await get_test_case_generator().generate_batch(requests)
 
         return BatchGenerateResponse(
             generated_tests=result["generated_tests"],
@@ -118,7 +118,7 @@ async def get_prompt_templates():
     Returns:
         List of prompt templates with their descriptions
     """
-    templates = test_case_generator._get_templates()
+    templates = get_test_case_generator()._get_templates()
     return list(templates.values())
 
 
@@ -133,7 +133,7 @@ async def get_prompt_template(test_type: str):
         Prompt template for the specified test type
     """
     try:
-        template = test_case_generator.get_prompt_template(test_type)
+        template = get_test_case_generator().get_prompt_template(test_type)
         return template
     except KeyError:
         raise HTTPException(
@@ -173,5 +173,5 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "test-generation",
-        "ai_enabled": bool(test_case_generator.anthropic_api_key)
+        "ai_enabled": bool(get_test_case_generator().anthropic_api_key)
     }

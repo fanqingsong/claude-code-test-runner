@@ -19,7 +19,7 @@ from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.models.schedule import Schedule
 from app.models.test_run import TestRun
-from app.services.execution_service import execution_service
+from app.services import get_execution_service
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def execute_scheduled_tests(schedule_id: int):
                 await db.commit()
 
                 # Check execution limits
-                can_execute = await execution_service.check_execution_limit(schedule, db)
+                can_execute = await get_execution_service().check_execution_limit(schedule, db)
                 if not can_execute:
                     logger.warning(
                         f"Execution limit reached for schedule {schedule_id}, skipping"
@@ -142,7 +142,7 @@ def execute_scheduled_tests(schedule_id: int):
 
                 # Resolve target test definitions
                 try:
-                    test_definition_ids = await execution_service.resolve_target_tests(
+                    test_definition_ids = await get_execution_service().resolve_target_tests(
                         schedule, db
                     )
                 except Exception as e:
@@ -160,10 +160,10 @@ def execute_scheduled_tests(schedule_id: int):
                 )
 
                 # Build environment
-                environment = execution_service.build_environment(schedule)
+                environment = get_execution_service().build_environment(schedule)
 
                 # Create test run record
-                await execution_service.create_test_run(
+                await get_execution_service().create_test_run(
                     schedule_id=schedule_id,
                     run_id=run_id,
                     test_definition_ids=test_definition_ids,

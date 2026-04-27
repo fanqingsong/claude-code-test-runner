@@ -18,8 +18,7 @@ from playwright.async_api import async_playwright, Browser, Page, BrowserContext
 
 from app.core.celery_app import celery_app
 from app.core.config import settings
-from app.services.claude_interpreter import claude_interpreter
-from app.services.execution_service import execution_service
+from app.services import get_claude_interpreter, get_execution_service
 
 
 @celery_app.task(bind=True, name="app.tasks.test_execution.execute_test",
@@ -45,7 +44,7 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
             )
 
             async with async_session_maker() as db:
-                await execution_service.update_run_status(run_id, "running", db)
+                await get_execution_service().update_run_status(run_id, "running", db)
                 await async_engine.dispose()
 
         loop = asyncio.new_event_loop()
@@ -76,7 +75,7 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
 
                 async with async_session_maker() as db:
                     final_status = "completed" if result.get("status") == "passed" else "failed"
-                    await execution_service.update_run_status(run_id, final_status, db)
+                    await get_execution_service().update_run_status(run_id, final_status, db)
                     await async_engine.dispose()
 
             loop2 = asyncio.new_event_loop()
@@ -99,7 +98,7 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
                 )
 
                 async with async_session_maker() as db:
-                    await execution_service.update_run_status(run_id, "failed", db)
+                    await get_execution_service().update_run_status(run_id, "failed", db)
                     await async_engine.dispose()
 
             loop2 = asyncio.new_event_loop()
@@ -302,7 +301,7 @@ async def _execute_test_async(
 
         async with async_session_maker() as db:
             # Try to find and update the test run
-            await execution_service.save_test_results(run_id, result, db)
+            await get_execution_service().save_test_results(run_id, result, db)
             await async_engine.dispose()
     except Exception as e:
         # Log but don't fail the task if database update fails
@@ -347,7 +346,7 @@ async def _execute_step_with_ai(
             "environment": environment
         }
 
-        result = await claude_interpreter.interpret_and_execute(page, description, context)
+        result = await get_claude_interpreter().interpret_and_execute(page, description, context)
 
         return {
             "step_number": step.get("step_number", 0),

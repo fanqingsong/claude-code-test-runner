@@ -50,3 +50,12 @@ celery_app.conf.beat_schedule = {
         "schedule": 60.0,  # Every 60 seconds (example)
     },
 }
+
+# Configure beat schedule with periodic tasks
+def _configure_beat_schedule():
+    """Configure Celery Beat with periodic tasks."""
+    from app.tasks.schedule_sync import setup_beat_schedule
+    setup_beat_schedule()
+
+# Call during module initialization
+_configure_beat_schedule()

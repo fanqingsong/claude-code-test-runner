@@ -333,7 +333,3 @@ Now, generate the Playwright code for this step:
         # Import the rule-based interpreter
         from app.tasks.test_execution import _interpret_and_execute
         return await _interpret_and_execute(page, description, context or {})
-
-
-# Global instance
-claude_interpreter = ClaudeTestInterpreter()

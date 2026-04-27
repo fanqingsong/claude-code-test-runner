@@ -6,7 +6,8 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.test_case_generator import TestCaseGenerator, test_case_generator
+from app.services.test_case_generator import TestCaseGenerator
+from app.services import get_test_case_generator
 from app.schemas.test_generation import TestCaseGenerateRequest
 
 
@@ -197,7 +198,7 @@ async def test_batch_generation(db_session: AsyncSession):
 
 def test_get_prompt_templates():
     """Test getting prompt templates"""
-    templates = test_case_generator._get_templates()
+    templates = get_test_case_generator()._get_templates()
 
     assert "functional" in templates
     assert "ui" in templates
