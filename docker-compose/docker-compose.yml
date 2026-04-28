@@ -159,7 +159,7 @@ services:
       dockerfile: Dockerfile
     container_name: cc-test-dashboard-service
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
@@ -168,6 +168,12 @@ services:
       PORT: 8003
     ports:
       - "8013:8003"
+      - "5173:5173"  # Vite dev server port for development
+    volumes:
+      # Mount frontend source for hot reload in development
+      - ./dashboard-service/frontend/src:/app/frontend/src
+      - ./dashboard-service/frontend/public:/app/frontend/public:ro
+    command: ["sh", "-c", "cd /app/frontend && npm run dev & cd /app && node src/server.js"]
     depends_on:
       postgres:
         condition: service_healthy

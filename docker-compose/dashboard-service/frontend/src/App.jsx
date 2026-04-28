@@ -3,6 +3,8 @@ import { getTests } from './api';
 import TestList from './components/TestList';
 import TestForm from './components/TestForm';
 import DashboardView from './components/DashboardView';
+import ScheduleList from './components/ScheduleList';
+import ScheduleForm from './components/ScheduleForm';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -11,6 +13,10 @@ function App() {
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
+
+  // Schedule states
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
 
   const loadTests = async () => {
     setLoading(true);
@@ -28,7 +34,7 @@ function App() {
   // 从hash初始化视图
   useEffect(() => {
     const hash = window.location.hash.slice(1); // 去掉#号
-    if (hash === 'tests' || hash === 'dashboard') {
+    if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules') {
       setCurrentView(hash);
     }
   }, []);
@@ -37,7 +43,7 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      if (hash === 'tests' || hash === 'dashboard') {
+      if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules') {
         setCurrentView(hash);
       }
     };
@@ -84,6 +90,47 @@ function App() {
     setShowCreateForm(false);
   };
 
+  // Schedule handlers
+  const handleScheduleCreated = () => {
+    setShowScheduleForm(false);
+    setEditingSchedule(null);
+  };
+
+  const handleEditSchedule = (schedule) => {
+    setEditingSchedule(schedule);
+    setShowScheduleForm(true);
+  };
+
+  const handleTriggerSchedule = async (scheduleId) => {
+    try {
+      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}/trigger`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        alert('调度已触发！');
+      } else {
+        alert('触发失败');
+      }
+    } catch (err) {
+      alert('错误: ' + err.message);
+    }
+  };
+
+  const handleToggleSchedule = async (scheduleId, isActive) => {
+    try {
+      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+      if (!response.ok) throw new Error('Failed to toggle schedule');
+      // Force reload by navigating
+      window.location.hash = 'schedules';
+    } catch (err) {
+      alert('错误: ' + err.message);
+    }
+  };
+
   const navStyle = {
     display: 'flex',
     background: '#1976d2',
@@ -119,12 +166,93 @@ function App() {
         >
           🧪 测试管理
         </button>
+        <button
+          onClick={() => window.location.hash = 'schedules'}
+          style={navButtonStyle(currentView === 'schedules')}
+        >
+          📅 调度管理
+        </button>
       </nav>
 
       {/* 内容区域 */}
       <div>
         {currentView === 'dashboard' ? (
           <DashboardView />
+        ) : currentView === 'schedules' ? (
+          <div style={{display: 'flex', minHeight: 'calc(100vh - 57px)'}}>
+            <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd', position: 'relative'}}>
+              {/* 创建调度按钮 */}
+              <button
+                onClick={() => {
+                  setEditingSchedule(null);
+                  setShowScheduleForm(!showScheduleForm);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  padding: '8px 16px',
+                  background: showScheduleForm ? '#f44336' : '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  zIndex: 10,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              >
+                {showScheduleForm ? '✕ 取消' : (editingSchedule ? '✏️ 编辑中' : '+ 创建调度')}
+              </button>
+
+              <ScheduleList
+                onEditSchedule={handleEditSchedule}
+                onTriggerSchedule={handleTriggerSchedule}
+                onToggleSchedule={handleToggleSchedule}
+              />
+            </div>
+
+            {/* 创建/编辑调度表单 - 可收缩 */}
+            {showScheduleForm && (
+              <div style={{
+                flex: '2',
+                padding: '20px',
+                background: '#f5f5f5',
+                borderLeft: editingSchedule ? '3px solid #ff9800' : '3px solid #4caf50',
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 57px)'
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                  <h2 style={{margin: 0, color: editingSchedule ? '#ff9800' : '#4caf50'}}>
+                    {editingSchedule ? `✏️ 编辑调度: ${editingSchedule.name}` : '创建新调度'}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setEditingSchedule(null);
+                      setShowScheduleForm(false);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      color: '#666'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <ScheduleForm
+                  onScheduleCreated={handleScheduleCreated}
+                  editingSchedule={editingSchedule}
+                  onCancel={() => {
+                    setEditingSchedule(null);
+                    setShowScheduleForm(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <div style={{display: 'flex', minHeight: 'calc(100vh - 57px)'}}>
             <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd', position: 'relative'}}>

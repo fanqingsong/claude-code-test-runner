@@ -30,6 +30,21 @@ export class DashboardService {
     // Serve React frontend in production
     if (process.env.NODE_ENV === 'production') {
       this.app.use(express.static(join(process.cwd(), 'frontend/dist')));
+    } else {
+      // Development mode: Proxy to Vite dev server for hot reload
+      console.log('🔥 Development mode: Proxying to Vite dev server on port 5173');
+      this.app.use((req, res, next) => {
+        // Proxy frontend requests to Vite dev server
+        if (req.path.startsWith('/assets') || req.path === '/' || req.path.startsWith('/@vite')) {
+          const { createProxyMiddleware } = require('http-proxy-middleware');
+          return createProxyMiddleware({
+            target: 'http://localhost:5173',
+            changeOrigin: true,
+            ws: true // Enable WebSocket for HMR
+          })(req, res, next);
+        }
+        next();
+      });
     }
 
     // CORS headers
