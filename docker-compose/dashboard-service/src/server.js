@@ -30,28 +30,22 @@ export class DashboardService {
     // Serve React frontend in production
     if (process.env.NODE_ENV === 'production') {
       this.app.use(express.static(join(process.cwd(), 'frontend/dist')));
-    } else {
-      // Development mode: Proxy to Vite dev server for hot reload
-      console.log('🔥 Development mode: Proxying to Vite dev server on port 5173');
-      this.app.use((req, res, next) => {
-        // Proxy frontend requests to Vite dev server
-        if (req.path.startsWith('/assets') || req.path === '/' || req.path.startsWith('/@vite')) {
-          const { createProxyMiddleware } = require('http-proxy-middleware');
-          return createProxyMiddleware({
-            target: 'http://localhost:5173',
-            changeOrigin: true,
-            ws: true // Enable WebSocket for HMR
-          })(req, res, next);
-        }
-        next();
-      });
     }
+    // In development mode, Vite dev server handles frontend directly
+    // Backend API routes are still served by Express
 
-    // CORS headers
+    // CORS headers - handle preflight requests explicitly
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      // Respond to preflight requests immediately
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+        return;
+      }
+
       next();
     });
   }
@@ -71,14 +65,16 @@ export class DashboardService {
     this.app.get('/api/dashboard', async (req, res) => {
       try {
         const days = parseInt(req.query.days) || 30;
-        const [summary, byDay] = await Promise.all([
+        const [summary, byDay, totalDefinitions] = await Promise.all([
           this.db.getDashboardSummary(days),
-          this.db.getTestRunsByDay(days)
+          this.db.getTestRunsByDay(days),
+          this.db.getTotalTestDefinitions()
         ]);
 
         res.json({
           summary,
           byDay,
+          totalDefinitions,
           days
         });
       } catch (error) {

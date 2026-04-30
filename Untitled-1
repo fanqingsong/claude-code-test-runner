@@ -1,0 +1,2 @@
+ 请参考项目（/home/fqs/workspace/self/fastapi-react-postgres-casdoor-sso）把casdoor功能移植过来，并添加用户认证功
+  能：分为管理员和普通用户， 管理员可以查看全部信息，普通用户只能查看自己的信息

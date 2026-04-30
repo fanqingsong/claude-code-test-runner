@@ -15,7 +15,6 @@ from sqlalchemy.orm import selectinload
 from app.models.schedule import Schedule
 from app.models.test_run import TestRun
 from app.models.test_suite import TestSuite
-from app.models.test_case import TestCase
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class ExecutionService:
     - Managing run state
     """
 
-    def __init__(self, db_session=None):
+    def __init__(self, db_session: AsyncSession):
         """
         Initialize Execution Service.
 
@@ -40,7 +39,7 @@ class ExecutionService:
         """
         self.db = db_session
 
-    async def resolve_target_tests(self, schedule, db) -> List[int]:
+    async def resolve_target_tests(self, schedule: Schedule) -> List[int]:
         """
         Resolve target test definition IDs based on schedule type.
 
@@ -59,7 +58,7 @@ class ExecutionService:
         elif schedule.schedule_type == 'suite':
             # Load test suite
             stmt = select(TestSuite).where(TestSuite.id == schedule.test_suite_id)
-            result = await db.execute(stmt)
+            result = await self.db.execute(stmt)
             suite = result.scalar_one_or_none()
 
             if not suite:
@@ -76,32 +75,40 @@ class ExecutionService:
         else:
             raise ValueError(f"Unknown schedule_type: {schedule.schedule_type}")
 
-    async def check_execution_limit(self, schedule, db) -> bool:
+    async def check_execution_limit(self, schedule_id: int) -> bool:
         """
         Check if execution is allowed based on concurrency settings.
 
         Args:
-            schedule: Schedule object
-            db: Database session
+            schedule_id: Schedule ID to check
 
         Returns:
             True if execution is allowed, False otherwise
         """
+        # Get schedule to check concurrency setting
+        stmt = select(Schedule).where(Schedule.id == schedule_id)
+        result = await self.db.execute(stmt)
+        schedule = result.scalar_one_or_none()
+
+        if not schedule:
+            logger.error(f"Schedule {schedule_id} not found")
+            return False
+
         # If concurrent execution is allowed, always return True
         if schedule.allow_concurrent:
             return True
 
         # Check for running executions
         stmt = select(func.count(TestRun.id)).where(
-            TestRun.schedule_id == schedule.id,
+            TestRun.schedule_id == schedule_id,
             TestRun.status.in_(['pending', 'running'])
         )
-        result = await db.execute(stmt)
+        result = await self.db.execute(stmt)
         running_count = result.scalar()
 
         if running_count > 0:
             logger.info(
-                f"Schedule {schedule.id} has {running_count} running executions, "
+                f"Schedule {schedule_id} has {running_count} running executions, "
                 "skipping due to concurrency limit"
             )
             return False
@@ -111,14 +118,14 @@ class ExecutionService:
     def build_environment(
         self,
         schedule: Schedule,
-        test_definition_environment: Optional[Dict[str, Any]] = None
+        test_definition_environment: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Build final execution environment by merging configurations.
 
         Args:
             schedule: Schedule object with environment_overrides
-            test_definition_environment: Base environment from test definition (optional)
+            test_definition_environment: Base environment from test definition
 
         Returns:
             Merged environment dictionary
@@ -132,34 +139,30 @@ class ExecutionService:
     async def create_test_run(
         self,
         schedule_id: int,
-        run_id: str,
-        test_definition_ids: List[int],
-        environment: Dict[str, Any],
-        db: AsyncSession
+        test_definition_id: int,
+        run_id: str
     ) -> TestRun:
         """
         Create a new test run record.
 
         Args:
             schedule_id: Schedule ID
+            test_definition_id: Test definition ID
             run_id: Unique run identifier
-            test_definition_ids: List of test definition IDs
-            environment: Environment variables
-            db: Database session
 
         Returns:
             Created TestRun object
         """
         test_run = TestRun(
             schedule_id=schedule_id,
+            test_definition_id=test_definition_id,
             run_id=run_id,
-            test_cases={'test_definition_ids': test_definition_ids, 'environment': environment},
             status='pending'
         )
 
-        db.add(test_run)
-        await db.commit()
-        await db.refresh(test_run)
+        self.db.add(test_run)
+        await self.db.commit()
+        await self.db.refresh(test_run)
 
         logger.info(f"Created test run {run_id} for schedule {schedule_id}")
         return test_run
@@ -249,7 +252,6 @@ class ExecutionService:
             raise ValueError(f"Test run {run_id} not found")
 
         # Update result fields
-        test_run.test_definition_id = results.get('test_definition_id')
         test_run.status = results.get('status', 'unknown')
         test_run.total_tests = results.get('total_tests', 0)
         test_run.passed = results.get('passed', 0)
@@ -258,41 +260,14 @@ class ExecutionService:
         test_run.test_cases = results.get('test_cases')
         test_run.error_message = results.get('error')
 
-        # Update timestamps and duration
-        start_time_ms = results.get('start_time')
-        end_time_ms = results.get('end_time')
-        total_duration_ms = results.get('total_duration')
+        # Update end time if not already set
+        if not test_run.end_time:
+            end_time = datetime.fromtimestamp(results.get('end_time', 0) / 1000)
+            test_run.end_time = end_time
 
-        if start_time_ms:
-            test_run.start_time = datetime.fromtimestamp(start_time_ms / 1000)
-
-        if end_time_ms:
-            test_run.end_time = datetime.fromtimestamp(end_time_ms / 1000)
-
-        if total_duration_ms:
-            test_run.total_duration_ms = int(total_duration_ms)
-        elif test_run.start_time and test_run.end_time:
-            # Calculate duration if not provided
-            delta = test_run.end_time - test_run.start_time
-            test_run.total_duration_ms = int(delta.total_seconds() * 1000)
-
-        # Save test case details
-        test_cases_data = results.get('test_cases', [])
-        if test_cases_data:
-            for idx, case_data in enumerate(test_cases_data):
-                test_case = TestCase(
-                    run_id=test_run.id,
-                    test_definition_id=results.get('test_definition_id'),
-                    test_id=f"{results.get('test_definition_id')}_step_{idx + 1}",
-                    description=case_data.get('description', f"Step {idx + 1}"),
-                    status=case_data.get('status', 'unknown'),
-                    duration=int(case_data.get('duration', 0)),
-                    start_time=int(results.get('start_time', 0)),
-                    end_time=int(results.get('end_time', 0)),
-                    error_message=case_data.get('error')
-                )
-                self.db.add(test_case)
-                logger.info(f"Added test case {test_case.test_id} with status {test_case.status}")
+            if test_run.start_time:
+                delta = end_time - test_run.start_time
+                test_run.total_duration_ms = int(delta.total_seconds() * 1000)
 
         await self.db.commit()
         await self.db.refresh(test_run)

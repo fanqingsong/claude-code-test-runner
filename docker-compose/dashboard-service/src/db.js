@@ -47,10 +47,12 @@ export class DatabaseManager {
   async getRecentTestRuns(limit = 100) {
     const text = `
       SELECT
-        id, run_id, start_time, end_time, total_tests, passed, failed, skipped,
-        total_duration, status, environment, triggered_by, created_at
-      FROM test_runs
-      ORDER BY start_time DESC
+        tr.id, tr.run_id, tr.start_time, tr.end_time, tr.total_tests, tr.passed, tr.failed, tr.skipped,
+        tr.total_duration_ms, tr.status, tr.created_at, tr.test_definition_id,
+        td.name as test_name
+      FROM test_runs tr
+      LEFT JOIN test_definitions td ON tr.test_definition_id = td.id
+      ORDER BY tr.created_at DESC
       LIMIT $1
     `;
     return await this.query(text, [limit]);
@@ -75,7 +77,7 @@ export class DatabaseManager {
    * Get dashboard summary data
    */
   async getDashboardSummary(days = 30) {
-    const startTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+    const startTime = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
 
     const text = `
       SELECT
@@ -83,11 +85,12 @@ export class DatabaseManager {
         SUM(passed) as total_passed,
         SUM(failed) as total_failed,
         SUM(total_tests) as total_tests,
-        AVG(total_duration) as avg_duration,
+        AVG(total_duration_ms) as avg_duration,
         COUNT(CASE WHEN status = 'passed' THEN 1 END) as successful_runs,
-        COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_runs
+        COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_runs,
+        COUNT(CASE WHEN total_duration_ms IS NOT NULL THEN 1 END) as runs_with_duration
       FROM test_runs
-      WHERE start_time > $1
+      WHERE created_at > $1
     `;
 
     const result = await this.query(text, [startTime]);
@@ -95,21 +98,34 @@ export class DatabaseManager {
   }
 
   /**
+   * Get total count of test definitions
+   */
+  async getTotalTestDefinitions() {
+    const text = `
+      SELECT COUNT(*) as total_definitions
+      FROM test_definitions
+      WHERE is_active = true
+    `;
+    const result = await this.query(text);
+    return result[0].total_definitions;
+  }
+
+  /**
    * Get test runs grouped by day
    */
   async getTestRunsByDay(days = 30) {
-    const startTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+    const startTime = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
 
     const text = `
       SELECT
-        DATE_TRUNC('day', TO_TIMESTAMP(start_time / 1000)) as date,
+        DATE_TRUNC('day', created_at) as date,
         COUNT(*) as total_runs,
         SUM(passed) as total_passed,
         SUM(failed) as total_failed,
         SUM(total_tests) as total_tests
       FROM test_runs
-      WHERE start_time > $1
-      GROUP BY DATE_TRUNC('day', TO_TIMESTAMP(start_time / 1000))
+      WHERE created_at > $1
+      GROUP BY DATE_TRUNC('day', created_at)
       ORDER BY date DESC
     `;
 
@@ -140,7 +156,7 @@ export class DatabaseManager {
    * Get flaky tests (tests with both passes and failures)
    */
   async getFlakyTests(days = 30) {
-    const startTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+    const startTime = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
 
     const text = `
       SELECT

@@ -129,7 +129,7 @@ def execute_scheduled_tests(schedule_id: int):
                     return
 
                 # Update last run time
-                schedule.last_run_time = datetime.now(timezone.utc)
+                schedule.last_run_time = datetime.utcnow()
                 await db.commit()
 
                 # Check execution limits

@@ -348,7 +348,7 @@ async def update_schedule(
     for field, value in update_data.items():
         setattr(schedule, field, value)
 
-    schedule.updated_at = datetime.now(timezone.utc)
+    schedule.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(schedule)
@@ -387,7 +387,7 @@ async def toggle_schedule(
         )
 
     schedule.is_active = toggle_data.is_active
-    schedule.updated_at = datetime.now(timezone.utc)
+    schedule.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(schedule)

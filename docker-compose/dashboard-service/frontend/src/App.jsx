@@ -5,6 +5,7 @@ import TestForm from './components/TestForm';
 import DashboardView from './components/DashboardView';
 import ScheduleList from './components/ScheduleList';
 import ScheduleForm from './components/ScheduleForm';
+import Modal from './components/Modal';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -17,6 +18,7 @@ function App() {
   // Schedule states
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
   const loadTests = async () => {
     setLoading(true);
@@ -92,8 +94,8 @@ function App() {
 
   // Schedule handlers
   const handleScheduleCreated = () => {
-    setShowScheduleForm(false);
-    setEditingSchedule(null);
+    // 触发列表刷新
+    setScheduleRefreshKey(prev => prev + 1);
   };
 
   const handleEditSchedule = (schedule) => {
@@ -118,14 +120,14 @@ function App() {
 
   const handleToggleSchedule = async (scheduleId, isActive) => {
     try {
-      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}`, {
+      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}/toggle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: isActive })
       });
       if (!response.ok) throw new Error('Failed to toggle schedule');
-      // Force reload by navigating
-      window.location.hash = 'schedules';
+      // Refresh the schedule list
+      handleScheduleCreated();
     } catch (err) {
       alert('错误: ' + err.message);
     }
@@ -133,44 +135,48 @@ function App() {
 
   const navStyle = {
     display: 'flex',
-    background: '#1976d2',
-    padding: '0 20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    background: 'var(--cds-background-inverse)',
+    padding: 'var(--cds-nav-padding)',
+    height: 'var(--cds-nav-height)',
+    alignItems: 'center'
   };
 
   const navButtonStyle = (isActive) => ({
     padding: '16px 20px',
     background: 'none',
     border: 'none',
-    color: 'white',
+    color: isActive ? 'var(--cds-background)' : 'var(--cds-border-subtle)',
     cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: '500',
-    borderBottom: isActive ? '3px solid white' : '3px solid transparent',
-    transition: 'all 0.2s'
+    fontSize: 'var(--cds-body-short-01)',
+    fontWeight: 'var(--cds-font-weight-regular)',
+    borderBottom: isActive ? '2px solid var(--cds-background)' : '2px solid transparent',
+    transition: 'all var(--cds-transition-normal)',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center'
   });
 
   return (
-    <div style={{fontFamily: 'Arial, sans-serif', minHeight: '100vh'}}>
+    <div style={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
       {/* 导航栏 */}
       <nav style={navStyle}>
         <button
           onClick={() => window.location.hash = 'dashboard'}
           style={navButtonStyle(currentView === 'dashboard')}
         >
-          📊 仪表板
+          仪表板
         </button>
         <button
           onClick={() => window.location.hash = 'tests'}
           style={navButtonStyle(currentView === 'tests')}
         >
-          🧪 测试管理
+          测试管理
         </button>
         <button
           onClick={() => window.location.hash = 'schedules'}
           style={navButtonStyle(currentView === 'schedules')}
         >
-          📅 调度管理
+          调度配置
         </button>
       </nav>
 
@@ -179,154 +185,135 @@ function App() {
         {currentView === 'dashboard' ? (
           <DashboardView />
         ) : currentView === 'schedules' ? (
-          <div style={{display: 'flex', minHeight: 'calc(100vh - 57px)'}}>
-            <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd', position: 'relative'}}>
-              {/* 创建调度按钮 */}
+          <div style={{padding: 'var(--cds-layout-sm)'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--cds-layout-md)'}}>
+              <h2 style={{
+                margin: 0,
+                fontSize: 'var(--cds-heading-01)',
+                fontWeight: 'var(--cds-font-weight-light)',
+                lineHeight: 'var(--cds-display-line-height)'
+              }}>调度配置</h2>
               <button
                 onClick={() => {
                   setEditingSchedule(null);
-                  setShowScheduleForm(!showScheduleForm);
+                  setShowScheduleForm(true);
                 }}
                 style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  padding: '8px 16px',
-                  background: showScheduleForm ? '#f44336' : '#4caf50',
-                  color: 'white',
+                  padding: 'var(--cds-button-padding-sm)',
+                  background: 'var(--cds-button-primary)',
+                  color: 'var(--cds-text-on-color)',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--cds-border-radius)',
                   cursor: 'pointer',
-                  fontWeight: 'bold',
-                  zIndex: 10,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  fontWeight: 'var(--cds-font-weight-regular)',
+                  fontSize: 'var(--cds-body-short-01)',
+                  height: 'var(--cds-button-height-compact)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--cds-spacing-sm)'
                 }}
               >
-                {showScheduleForm ? '✕ 取消' : (editingSchedule ? '✏️ 编辑中' : '+ 创建调度')}
+                <span>+</span>
+                <span>创建调度</span>
               </button>
-
-              <ScheduleList
-                onEditSchedule={handleEditSchedule}
-                onTriggerSchedule={handleTriggerSchedule}
-                onToggleSchedule={handleToggleSchedule}
-              />
             </div>
 
-            {/* 创建/编辑调度表单 - 可收缩 */}
-            {showScheduleForm && (
-              <div style={{
-                flex: '2',
-                padding: '20px',
-                background: '#f5f5f5',
-                borderLeft: editingSchedule ? '3px solid #ff9800' : '3px solid #4caf50',
-                overflowY: 'auto',
-                maxHeight: 'calc(100vh - 57px)'
-              }}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                  <h2 style={{margin: 0, color: editingSchedule ? '#ff9800' : '#4caf50'}}>
-                    {editingSchedule ? `✏️ 编辑调度: ${editingSchedule.name}` : '创建新调度'}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setEditingSchedule(null);
-                      setShowScheduleForm(false);
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '20px',
-                      cursor: 'pointer',
-                      color: '#666'
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                <ScheduleForm
-                  onScheduleCreated={handleScheduleCreated}
-                  editingSchedule={editingSchedule}
-                  onCancel={() => {
-                    setEditingSchedule(null);
-                    setShowScheduleForm(false);
-                  }}
-                />
-              </div>
-            )}
+            <ScheduleList
+              refreshKey={scheduleRefreshKey}
+              onEditSchedule={handleEditSchedule}
+              onTriggerSchedule={handleTriggerSchedule}
+              onToggleSchedule={handleToggleSchedule}
+            />
+
+            {/* 创建/编辑调度 Modal */}
+            <Modal
+              isOpen={showScheduleForm}
+              onClose={() => {
+                setEditingSchedule(null);
+                setShowScheduleForm(false);
+              }}
+              title={editingSchedule ? `✏️ 编辑调度: ${editingSchedule.name}` : '✨ 创建新调度'}
+            >
+              <ScheduleForm
+                onScheduleCreated={() => {
+                  handleScheduleCreated();
+                  setShowScheduleForm(false);
+                }}
+                editingSchedule={editingSchedule}
+                onCancel={() => {
+                  setEditingSchedule(null);
+                  setShowScheduleForm(false);
+                }}
+              />
+            </Modal>
           </div>
         ) : (
-          <div style={{display: 'flex', minHeight: 'calc(100vh - 57px)'}}>
-            <div style={{flex: '3', padding: '20px', borderRight: '1px solid #ddd', position: 'relative'}}>
-              {/* 创建测试按钮 */}
+          <div style={{padding: 'var(--cds-layout-sm)'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--cds-layout-md)'}}>
+              <h2 style={{
+                margin: 0,
+                fontSize: 'var(--cds-heading-01)',
+                fontWeight: 'var(--cds-font-weight-light)',
+                lineHeight: 'var(--cds-display-line-height)'
+              }}>测试管理</h2>
               <button
                 onClick={() => {
                   setEditingTest(null);
-                  setShowCreateForm(!showCreateForm);
+                  setShowCreateForm(true);
                 }}
                 style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  padding: '8px 16px',
-                  background: showCreateForm ? '#f44336' : '#4caf50',
-                  color: 'white',
+                  padding: 'var(--cds-button-padding-sm)',
+                  background: 'var(--cds-button-primary)',
+                  color: 'var(--cds-text-on-color)',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--cds-border-radius)',
                   cursor: 'pointer',
-                  fontWeight: 'bold',
-                  zIndex: 10,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  fontWeight: 'var(--cds-font-weight-regular)',
+                  fontSize: 'var(--cds-body-short-01)',
+                  height: 'var(--cds-button-height-compact)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--cds-spacing-sm)'
                 }}
               >
-                {showCreateForm ? '✕ 取消' : (editingTest ? '✏️ 编辑中' : '+ 创建测试')}
+                <span>+</span>
+                <span>创建测试</span>
               </button>
-
-              {loading ? (
-                <div>Loading tests...</div>
-              ) : error ? (
-                <div style={{color: 'red'}}>{error}</div>
-              ) : (
-                <TestList
-                  tests={tests}
-                  onRunTest={handleTestRun}
-                  onEditTest={handleEditTest}
-                />
-              )}
             </div>
 
-            {/* 创建/编辑测试表单 - 可收缩 */}
-            {showCreateForm && (
-              <div style={{
-                flex: '2',
-                padding: '20px',
-                background: '#f5f5f5',
-                borderLeft: editingTest ? '3px solid #ff9800' : '3px solid #4caf50',
-                overflowY: 'auto',
-                maxHeight: 'calc(100vh - 57px)'
-              }}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                  <h2 style={{margin: 0, color: editingTest ? '#ff9800' : '#4caf50'}}>
-                    {editingTest ? `✏️ 编辑测试: ${editingTest.name}` : '创建新测试'}
-                  </h2>
-                  <button
-                    onClick={handleCancelEdit}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '20px',
-                      cursor: 'pointer',
-                      color: '#666'
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                <TestForm
-                  onTestCreated={handleTestCreated}
-                  editingTest={editingTest}
-                  onCancel={handleCancelEdit}
-                />
-              </div>
+            {loading ? (
+              <div>加载中...</div>
+            ) : error ? (
+              <div style={{color: 'red'}}>{error}</div>
+            ) : (
+              <TestList
+                tests={tests}
+                onRunTest={handleTestRun}
+                onEditTest={handleEditTest}
+              />
             )}
+
+            {/* 创建/编辑测试 Modal */}
+            <Modal
+              isOpen={showCreateForm}
+              onClose={() => {
+                setEditingTest(null);
+                setShowCreateForm(false);
+              }}
+              title={editingTest ? `✏️ 编辑测试: ${editingTest.name}` : '✨ 创建新测试'}
+            >
+              <TestForm
+                onTestCreated={() => {
+                  handleTestCreated();
+                  setShowCreateForm(false);
+                }}
+                editingTest={editingTest}
+                onCancel={() => {
+                  setEditingTest(null);
+                  setShowCreateForm(false);
+                }}
+              />
+            </Modal>
           </div>
         )}
       </div>

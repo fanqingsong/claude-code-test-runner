@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './ScheduleForm.css';
 
 export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCancel }) {
   const [tests, setTests] = useState([]);
@@ -7,28 +8,36 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
 
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     schedule_type: 'single',
-    test_definition_ids: [],
-    cron_expression: '',
-    timezone: 'UTC',
-    retry_config: {
-      max_retries: 3,
-      retry_delay_seconds: 60
-    }
+    test_definition_id: null,
+    test_suite_id: null,
+    tag_filter: null,
+    cron_expression: '0 * * * *',
+    timezone: 'Asia/Shanghai',
+    environment_overrides: {},
+    is_active: true,
+    allow_concurrent: false,
+    max_retries: 3,
+    retry_interval_seconds: 60
   });
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     loadTests();
     if (editingSchedule) {
       setFormData({
         name: editingSchedule.name || '',
-        description: editingSchedule.description || '',
         schedule_type: editingSchedule.schedule_type || 'single',
-        test_definition_ids: editingSchedule.test_definition_ids || [],
-        cron_expression: editingSchedule.cron_expression || '',
-        timezone: editingSchedule.timezone || 'UTC',
-        retry_config: editingSchedule.retry_config || { max_retries: 3, retry_delay_seconds: 60 }
+        test_definition_id: editingSchedule.test_definition_id || null,
+        test_suite_id: editingSchedule.test_suite_id || null,
+        tag_filter: editingSchedule.tag_filter || null,
+        cron_expression: editingSchedule.cron_expression || '0 * * * *',
+        timezone: editingSchedule.timezone || 'Asia/Shanghai',
+        environment_overrides: editingSchedule.environment_overrides || {},
+        is_active: editingSchedule.is_active !== undefined ? editingSchedule.is_active : true,
+        allow_concurrent: editingSchedule.allow_concurrent || false,
+        max_retries: editingSchedule.max_retries || 3,
+        retry_interval_seconds: editingSchedule.retry_interval_seconds || 60
       });
     }
   }, [editingSchedule]);
@@ -48,6 +57,7 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const url = editingSchedule
@@ -67,6 +77,7 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
         throw new Error(errorData.detail || 'Failed to save schedule');
       }
 
+      // 通知父组件刷新列表并关闭modal
       onScheduleCreated();
     } catch (err) {
       setError(err.message);
@@ -76,11 +87,10 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
   };
 
   const handleTestToggle = (testId) => {
+    // For single schedule type, only one test can be selected
     setFormData(prev => ({
       ...prev,
-      test_definition_ids: prev.test_definition_ids.includes(testId)
-        ? prev.test_definition_ids.filter(id => id !== testId)
-        : [...prev.test_definition_ids, testId]
+      test_definition_id: prev.test_definition_id === testId ? null : testId
     }));
   };
 
@@ -94,75 +104,47 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
   ];
 
   return (
-    <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      <h3 style={{margin: 0}}>
-        {editingSchedule ? '✏️ 编辑调度' : '📅 创建新调度'}
-      </h3>
-
+    <form onSubmit={handleSubmit} className="schedule-form">
       {error && (
-        <div style={{
-          padding: '12px',
-          background: '#ffebee',
-          border: '1px solid #f44336',
-          borderRadius: '4px',
-          color: '#c62828'
-        }}>
-          {error}
+        <div className="form-alert error">
+          <span className="form-alert-icon">⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          调度名称 *
-        </label>
+      {successMessage && (
+        <div className="form-alert success">
+          <span className="form-alert-icon">✓</span>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      <div className="form-group">
+        <label className="form-label required">调度名称</label>
         <input
           type="text"
           required
+          className="form-input"
           value={formData.name}
           onChange={(e) => setFormData({...formData, name: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}
           placeholder="例如：每日回归测试"
         />
       </div>
 
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          描述
-        </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px',
-            minHeight: '60px'
-          }}
-          placeholder="描述这个调度的用途..."
-        />
-      </div>
-
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          调度类型
-        </label>
+      <div className="form-group">
+        <label className="form-label">调度类型</label>
         <select
+          className="form-select"
           value={formData.schedule_type}
-          onChange={(e) => setFormData({...formData, schedule_type: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px'
+          onChange={(e) => {
+            const newType = e.target.value;
+            setFormData(prev => ({
+              ...prev,
+              schedule_type: newType,
+              test_definition_id: newType === 'single' ? prev.test_definition_id : null,
+              test_suite_id: newType === 'suite' ? prev.test_suite_id : null,
+              tag_filter: newType === 'tag_filter' ? prev.tag_filter : null
+            }));
           }}
         >
           <option value="single">单个测试</option>
@@ -171,62 +153,39 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
         </select>
       </div>
 
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          Cron 表达式 *
-        </label>
+      <div className="form-group">
+        <label className="form-label required">Cron 表达式</label>
         <select
+          className="form-select"
           value={formData.cron_expression}
           onChange={(e) => setFormData({...formData, cron_expression: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px',
-            marginBottom: '8px'
-          }}
         >
           <option value="">选择预设...</option>
           {cronPresets.map(preset => (
             <option key={preset.value} value={preset.value}>
-            {preset.label} ({preset.value})
-          </option>
+              {preset.label} ({preset.value})
+            </option>
           ))}
         </select>
         <input
           type="text"
           required
+          className="form-input"
           value={formData.cron_expression}
           onChange={(e) => setFormData({...formData, cron_expression: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}
           placeholder="* * * * * (分 时 日 月 周)"
         />
-        <small style={{color: '#666', fontSize: '12px'}}>
-          格式：分 时 日 月 周 (例如：0 2 * * * = 每天凌晨2点)
-        </small>
+        <div className="form-helper">
+          <span>格式：分 时 日 月 周 (例如：0 2 * * * = 每天凌晨2点)</span>
+        </div>
       </div>
 
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          时区
-        </label>
+      <div className="form-group">
+        <label className="form-label">时区</label>
         <select
+          className="form-select"
           value={formData.timezone}
           onChange={(e) => setFormData({...formData, timezone: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}
         >
           <option value="UTC">UTC</option>
           <option value="Asia/Shanghai">Asia/Shanghai (中国标准时间)</option>
@@ -235,86 +194,109 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
         </select>
       </div>
 
-      <div>
-        <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-          选择测试用例
-        </label>
-        <div style={{
-          maxHeight: '200px',
-          overflowY: 'auto',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          padding: '8px'
-        }}>
-          {tests.length === 0 ? (
-            <div style={{padding: '16px', textAlign: 'center', color: '#666'}}>
-              暂无测试用例
-            </div>
-          ) : (
-            tests.map(test => (
-              <label key={test.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '8px',
-                borderBottom: '1px solid #eee',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={formData.test_definition_ids.includes(test.id)}
-                  onChange={() => handleTestToggle(test.id)}
-                  style={{marginRight: '8px'}}
-                />
-                <span style={{fontSize: '14px'}}>
-                  {test.name}
-                </span>
-              </label>
-            ))
-          )}
+      {formData.schedule_type === 'single' && (
+        <div className="form-group">
+          <label className="form-label required">选择测试用例</label>
+          <div className="test-selection-list">
+            {tests.length === 0 ? (
+              <div className="test-empty">暂无测试用例</div>
+            ) : (
+              tests.map(test => (
+                <label
+                  key={test.id}
+                  className={`test-selection-item ${formData.test_definition_id === test.id ? 'selected' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="test_selection"
+                    className="test-selection-radio"
+                    checked={formData.test_definition_id === test.id}
+                    onChange={() => handleTestToggle(test.id)}
+                  />
+                  <span className="test-selection-name">{test.name}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <div className="form-helper">
+            {formData.test_definition_id ? '✓ 已选择1个测试用例' : '请选择1个测试用例'}
+          </div>
         </div>
-        <small style={{color: '#666', fontSize: '12px'}}>
-          已选择 {formData.test_definition_ids.length} 个测试用例
-        </small>
-      </div>
+      )}
 
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        marginTop: '16px'
-      }}>
+      {formData.schedule_type === 'suite' && (
+        <div className="form-group">
+          <label className="form-label required">测试套件ID</label>
+          <input
+            type="number"
+            required
+            className="form-input"
+            value={formData.test_suite_id || ''}
+            onChange={(e) => setFormData({...formData, test_suite_id: parseInt(e.target.value) || null})}
+            placeholder="输入测试套件ID"
+          />
+          <div className="form-helper">
+            <span className="form-helper-icon">💡</span>
+            <span>提示：测试套件功能开发中，请先使用"单个测试"类型</span>
+          </div>
+        </div>
+      )}
+
+      {formData.schedule_type === 'tag_filter' && (
+        <div className="form-group">
+          <label className="form-label required">标签过滤条件</label>
+          <input
+            type="text"
+            required
+            className="form-input"
+            value={formData.tag_filter || ''}
+            onChange={(e) => setFormData({...formData, tag_filter: e.target.value})}
+            placeholder="例如：smoke,regression"
+          />
+          <div className="form-helper">
+            <span className="form-helper-icon">💡</span>
+            <span>提示：输入标签，用逗号分隔（例如：smoke,regression）。标签过滤功能开发中。</span>
+          </div>
+        </div>
+      )}
+
+      <div className="form-actions">
         <button
           type="submit"
-          disabled={loading || formData.test_definition_ids.length === 0}
-          style={{
-            flex: 1,
-            padding: '10px 16px',
-            background: loading || formData.test_definition_ids.length === 0 ? '#ccc' : '#4caf50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading || formData.test_definition_ids.length === 0 ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}
+          className="form-btn form-btn-primary"
+          disabled={loading || !isFormValid()}
         >
-          {loading ? '保存中...' : (editingSchedule ? '💾 更新调度' : '✨ 创建调度')}
+          {loading ? (
+            <>
+              <div className="btn-spinner"></div>
+              <span>保存中...</span>
+            </>
+          ) : (
+            <span>{editingSchedule ? '💾 更新调度' : '✨ 创建调度'}</span>
+          )}
         </button>
         <button
           type="button"
+          className="form-btn form-btn-secondary"
           onClick={onCancel}
-          style={{
-            padding: '10px 16px',
-            background: '#f44336',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
         >
-          ✕ 取消
+          <span>✕ 完成</span>
         </button>
       </div>
     </form>
   );
+
+  // 验证表单是否有效
+  function isFormValid() {
+    switch (formData.schedule_type) {
+      case 'single':
+        return formData.test_definition_id !== null;
+      case 'suite':
+        return formData.test_suite_id !== null;
+      case 'tag_filter':
+        return formData.tag_filter && formData.tag_filter.trim() !== '';
+      default:
+        return false;
+    }
+  }
 }

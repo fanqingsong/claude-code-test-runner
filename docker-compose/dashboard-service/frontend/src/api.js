@@ -216,6 +216,21 @@ export const getTestRuns = async (limit = 20) => {
   }
 };
 
+export const getTestRunDetails = async (runId) => {
+  try {
+    const response = await fetch(`${DASHBOARD_API}/test-runs/${runId}`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch test run details: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching test run details:', error);
+    throw error;
+  }
+};
+
 // Get test job status
 export const getJobStatus = async (jobId) => {
   try {

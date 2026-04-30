@@ -13,7 +13,7 @@ celery_app = Celery(
     "scheduler_service",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.test_execution"]
+    include=["app.tasks.test_execution", "app.tasks.schedule_sync"]
 )
 
 # Configure Celery
@@ -28,6 +28,7 @@ celery_app.conf.update(
     # Task routing
     task_routes={
         "app.tasks.test_execution.execute_test": {"queue": "test_execution"},
+        "app.tasks.schedule_sync.*": {"queue": "schedule_sync"},
     },
 
     # Worker settings
@@ -43,19 +44,31 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
 )
 
-# Scheduled tasks (will be configured dynamically)
+# Configure periodic tasks for Celery Beat
+from celery.schedules import crontab
+
+# Maintenance tasks + user schedules
 celery_app.conf.beat_schedule = {
-    "example-scheduled-task": {
-        "task": "app.tasks.test_execution.execute_test",
-        "schedule": 60.0,  # Every 60 seconds (example)
+    # Sync schedules to Celery Beat every 5 minutes
+    "sync-schedules-to-beat": {
+        "task": "app.tasks.schedule_sync.sync_schedules_to_beat",
+        "schedule": crontab(minute='*/5'),
+    },
+    # Check for overdue schedules every minute
+    "check-overdue-schedules": {
+        "task": "app.tasks.schedule_sync.check_overdue_schedules",
+        "schedule": crontab(minute='*'),
+    },
+    # Clean up old test runs daily at 2 AM
+    "cleanup-old-test-runs": {
+        "task": "app.tasks.schedule_sync.cleanup_old_test_runs",
+        "schedule": crontab(hour=2, minute=0),
+    },
+    # User schedule: "每小时中文测试11" - every minute
+    "schedule_3": {
+        "task": "app.tasks.schedule_sync.execute_scheduled_tests",
+        "schedule": crontab(minute='*'),
+        "args": [3],
+        "options": {"expires": 300}
     },
 }
-
-# Configure beat schedule with periodic tasks
-def _configure_beat_schedule():
-    """Configure Celery Beat with periodic tasks."""
-    from app.tasks.schedule_sync import setup_beat_schedule
-    setup_beat_schedule()
-
-# Call during module initialization
-_configure_beat_schedule()

@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -44,7 +44,9 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
             )
 
             async with async_session_maker() as db:
-                await get_execution_service().update_run_status(run_id, "running", db)
+                from app.services.execution_service import ExecutionService
+                execution_service = ExecutionService(db)
+                await execution_service.update_run_status(run_id, "running")
                 await async_engine.dispose()
 
         loop = asyncio.new_event_loop()
@@ -74,8 +76,10 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
                 )
 
                 async with async_session_maker() as db:
-                    final_status = "completed" if result.get("status") == "passed" else "failed"
-                    await get_execution_service().update_run_status(run_id, final_status, db)
+                    from app.services.execution_service import ExecutionService
+                    execution_service = ExecutionService(db)
+                    # Status is already set correctly by save_test_results, just update end_time if needed
+                    await execution_service.update_run_status(run_id, result.get("status", "failed"))
                     await async_engine.dispose()
 
             loop2 = asyncio.new_event_loop()
@@ -98,7 +102,9 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
                 )
 
                 async with async_session_maker() as db:
-                    await get_execution_service().update_run_status(run_id, "failed", db)
+                    from app.services.execution_service import ExecutionService
+                    execution_service = ExecutionService(db)
+                    await execution_service.update_run_status(run_id, "failed")
                     await async_engine.dispose()
 
             loop2 = asyncio.new_event_loop()
@@ -300,8 +306,10 @@ async def _execute_test_async(
         )
 
         async with async_session_maker() as db:
-            # Try to find and update the test run
-            await get_execution_service().save_test_results(run_id, result, db)
+            # Initialize service with db session and save results
+            from app.services.execution_service import ExecutionService
+            execution_service = ExecutionService(db)
+            await execution_service.save_test_results(run_id, result)
             await async_engine.dispose()
     except Exception as e:
         # Log but don't fail the task if database update fails

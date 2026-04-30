@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import TestCard from './TestCard';
 import TestRunModal from './TestRunModal';
 import TestDetailModal from './TestDetailModal';
 import RunHistoryModal from './RunHistoryModal';
+import './TestList.css';
 
 function TestList({ tests, onRunTest, onEditTest }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,78 +82,132 @@ function TestList({ tests, onRunTest, onEditTest }) {
   };
 
   return (
-    <div>
-      <h2 style={{marginTop: 0, marginBottom: '16px'}}>Test Cases ({tests.length})</h2>
+    <div className="test-list">
+      <h2 className="list-title">测试用例 ({tests.length})</h2>
 
-      <input
-        type="text"
-        placeholder="Search tests..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          marginBottom: '12px',
-          border: '1px solid #ddd',
-          borderRadius: '4px'
-        }}
-      />
+      <div className="list-controls">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="搜索测试用例..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
-      {allTags.length > 0 && (
-        <div style={{marginBottom: '16px'}}>
-          <button
-            onClick={() => setSelectedTag(null)}
-            style={{
-              padding: '4px 8px',
-              marginRight: '4px',
-              marginBottom: '4px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              background: !selectedTag ? '#1976d2' : '#fff',
-              color: !selectedTag ? '#fff' : '#000'
-            }}
-          >
-            All
-          </button>
-          {allTags.map(tag => (
+        {allTags.length > 0 && (
+          <div className="tag-filters">
             <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
-              style={{
-                padding: '4px 8px',
-                marginRight: '4px',
-                marginBottom: '4px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                background: selectedTag === tag ? '#1976d2' : '#fff',
-                color: selectedTag === tag ? '#fff' : '#000'
-              }}
+              className={`tag-filter-btn ${!selectedTag ? 'active' : ''}`}
+              onClick={() => setSelectedTag(null)}
             >
-              {tag}
+              全部
             </button>
-          ))}
-        </div>
-      )}
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                className={`tag-filter-btn ${selectedTag === tag ? 'active' : ''}`}
+                onClick={() => setSelectedTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {filteredTests.length === 0 ? (
-        <p style={{color: '#666'}}>No tests found</p>
+        <div className="empty-state">
+          <div className="empty-icon">🧪</div>
+          <p className="empty-title">没有找到测试用例</p>
+        </div>
       ) : (
-        filteredTests.map(test => {
-          if (!test.id) {
-            console.warn('Test missing id:', test);
-            return null;
-          }
-          return (
-            <TestCard
-              key={test.id}
-              test={test}
-              onRun={handleTestRun}
-              onViewDetails={handleViewDetails}
-              onViewRunHistory={handleViewRunHistory}
-              onEdit={onEditTest}
-            />
-          );
-        })
+        <div className="table-container">
+          <table className="test-table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>描述</th>
+                <th>标签</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTests.map((test, index) => {
+                if (!test.id) {
+                  console.warn('Test missing id:', test);
+                  return null;
+                }
+                return (
+                  <tr key={test.id} className="test-row">
+                    <td className="name-cell">
+                      <div className="test-name">{test.name}</div>
+                    </td>
+                    <td className="description-cell">
+                      <div className="test-description">
+                        {test.description || '无描述'}
+                      </div>
+                    </td>
+                    <td className="tags-cell">
+                      <div className="test-tags">
+                        {test.tags && test.tags.length > 0 ? (
+                          test.tags.map(tag => (
+                            <span key={tag} className="tag-badge">{tag}</span>
+                          ))
+                        ) : (
+                          <span className="no-tags">无标签</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => handleTestRun(test.id)}
+                          className="action-btn run-btn"
+                          title="立即执行"
+                          aria-label="立即执行测试"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleViewDetails(test)}
+                          className="action-btn detail-btn"
+                          title="查看详情"
+                          aria-label="查看测试详情"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleViewRunHistory(test)}
+                          className="action-btn history-btn"
+                          title="运行历史"
+                          aria-label="查看运行历史"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L13 5v8zm5 0v-6h-3v6h5V8h-5V5h-3v6h5z"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => onEditTest(test)}
+                          className="action-btn edit-btn"
+                          title="编辑"
+                          aria-label="编辑测试"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Test Run Status Modal */}

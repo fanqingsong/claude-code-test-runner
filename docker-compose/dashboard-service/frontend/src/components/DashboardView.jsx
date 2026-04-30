@@ -1,13 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { getDashboardData, getTestRuns } from '../api';
 import StatsCards from './StatsCards';
-import ChartsSection from './ChartsSection';
+// import ChartsSection from './ChartsSection';  // Temporarily disabled due to loading issues
 import RecentTests from './RecentTests';
+
+// Helper functions - defined outside component to avoid initialization issues
+const generateMockDashboardData = () => {
+  const byDay = [];
+  const today = new Date();
+
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const passed = Math.floor(Math.random() * 15) + 5;
+    const failed = Math.floor(Math.random() * 3);
+
+    byDay.push({
+      date: date.toISOString(),
+      passed,
+      failed,
+      duration: Math.random() * 100 + 20
+    });
+  }
+
+  return {
+    summary: {
+      total_runs: byDay.reduce((sum, day) => sum + day.passed + day.failed, 0),
+      total_passed: byDay.reduce((sum, day) => sum + day.passed, 0),
+      total_failed: byDay.reduce((sum, day) => sum + day.failed, 0),
+      avg_duration: byDay.reduce((sum, day) => sum + day.duration, 0) / byDay.length,
+      total_tests: 12,
+      successful_runs: byDay.reduce((sum, day) => sum + day.passed, 0),
+      failed_runs: byDay.reduce((sum, day) => sum + day.failed, 0)
+    },
+    byDay,
+    days: 30
+  };
+};
+
+const generateMockTestRuns = () => {
+  const statuses = ['passed', 'passed', 'passed', 'failed', 'running'];
+  const data = [];
+
+  for (let i = 0; i < 10; i++) {
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const timestamp = new Date(Date.now() - Math.random() * 3600000);
+
+    data.push({
+      id: `run-${i}`,
+      test_name: `测试用例 ${i + 1}`,
+      status,
+      duration: status === 'running' ? null : Math.random() * 120 + 20,
+      timestamp: timestamp.toISOString(),
+      created_at: timestamp.toISOString()
+    });
+  }
+
+  return data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+};
 
 function DashboardView() {
   const [dashboardData, setDashboardData] = useState({
     summary: {},
-    byDay: []
+    byDay: [],
+    totalDefinitions: 0
   });
   const [testRuns, setTestRuns] = useState([]);
   const [timeRange, setTimeRange] = useState('30d');
@@ -91,61 +147,6 @@ function DashboardView() {
     );
   }
 
-  // Generate mock data functions
-  const generateMockDashboardData = () => {
-    const byDay = [];
-    const today = new Date();
-
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const passed = Math.floor(Math.random() * 15) + 5;
-      const failed = Math.floor(Math.random() * 3);
-
-      byDay.push({
-        date: date.toISOString(),
-        passed,
-        failed,
-        duration: Math.random() * 100 + 20
-      });
-    }
-
-    return {
-      summary: {
-        total_runs: byDay.reduce((sum, day) => sum + day.passed + day.failed, 0),
-        total_passed: byDay.reduce((sum, day) => sum + day.passed, 0),
-        total_failed: byDay.reduce((sum, day) => sum + day.failed, 0),
-        avg_duration: byDay.reduce((sum, day) => sum + day.duration, 0) / byDay.length,
-        total_tests: 12,
-        successful_runs: byDay.reduce((sum, day) => sum + day.passed, 0),
-        failed_runs: byDay.reduce((sum, day) => sum + day.failed, 0)
-      },
-      byDay,
-      days: 30
-    };
-  };
-
-  const generateMockTestRuns = () => {
-    const statuses = ['passed', 'passed', 'passed', 'failed', 'running'];
-    const data = [];
-
-    for (let i = 0; i < 10; i++) {
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const timestamp = new Date(Date.now() - Math.random() * 3600000);
-
-      data.push({
-        id: `run-${i}`,
-        test_name: `测试用例 ${i + 1}`,
-        status,
-        duration: status === 'running' ? null : Math.random() * 120 + 20,
-        timestamp: timestamp.toISOString(),
-        created_at: timestamp.toISOString()
-      });
-    }
-
-    return data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  };
-
   return (
     <div style={{
       padding: '24px',
@@ -162,14 +163,16 @@ function DashboardView() {
       </h1>
 
       {/* 统计卡片 */}
-      <StatsCards stats={dashboardData.summary || {}} />
+      <StatsCards stats={dashboardData.summary || {}} totalDefinitions={dashboardData.totalDefinitions || 0} />
 
-      {/* 图表区域 */}
+      {/* 图表区域 - 暂时禁用 */}
+      {/*
       <ChartsSection
         dashboardData={dashboardData}
         timeRange={timeRange}
         onTimeRangeChange={handleTimeRangeChange}
       />
+      */}
 
       {/* 最近测试运行 */}
       <div style={{ marginTop: '24px' }}>

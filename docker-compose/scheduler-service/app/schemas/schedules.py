@@ -4,7 +4,7 @@ Pydantic Schemas for Schedule Management
 
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing_extensions import Literal
 
 
@@ -53,20 +53,19 @@ class ScheduleCreate(BaseModel):
         description="Seconds between retries"
     )
 
-    @field_validator('schedule_type')
-    @classmethod
-    def validate_target_config(cls, v, info):
-        """Validate that appropriate target field is provided"""
-        if v == 'single':
-            if info.data.get('test_definition_id') is None:
+    @model_validator(mode='after')
+    def validate_target_config(self):
+        """Validate that appropriate target field is provided based on schedule_type"""
+        if self.schedule_type == 'single':
+            if self.test_definition_id is None:
                 raise ValueError('schedule_type=single requires test_definition_id')
-        elif v == 'suite':
-            if info.data.get('test_suite_id') is None:
+        elif self.schedule_type == 'suite':
+            if self.test_suite_id is None:
                 raise ValueError('schedule_type=suite requires test_suite_id')
-        elif v == 'tag_filter':
-            if info.data.get('tag_filter') is None:
+        elif self.schedule_type == 'tag_filter':
+            if self.tag_filter is None:
                 raise ValueError('schedule_type=tag_filter requires tag_filter')
-        return v
+        return self
 
 
 class ScheduleUpdate(BaseModel):

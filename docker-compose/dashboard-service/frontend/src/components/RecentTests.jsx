@@ -1,37 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
+import TestRunDetailModal from './TestRunDetailModal';
+import './RecentTests.css';
 
-function RecentTests({ testRuns = [] }) {
+function RecentTests({ testRuns = [], onRefresh }) {
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [selectedRun, setSelectedRun] = useState(null);
+
   // 如果没有真实数据，使用模拟数据
   const displayData = testRuns.length > 0 ? testRuns : generateMockData();
 
+  // 计算分页数据
+  const totalPages = Math.ceil(displayData.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentPageData = displayData.slice(startIndex, endIndex);
+
   const getStatusBadge = (status) => {
-    const styles = {
-      passed: {
-        background: '#e8f5e9',
-        color: '#2e7d32',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontWeight: '500'
-      },
-      failed: {
-        background: '#ffebee',
-        color: '#c62828',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontWeight: '500'
-      },
-      running: {
-        background: '#e3f2fd',
-        color: '#1565c0',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontWeight: '500'
-      }
+    const className = `status-badge ${status || 'running'}`;
+    const label = {
+      passed: '通过',
+      failed: '失败',
+      running: '运行中'
     };
-    return styles[status] || styles.running;
+    return (
+      <span className={className}>
+        {label[status] || label.running}
+      </span>
+    );
   };
 
   const formatDuration = (seconds) => {
@@ -57,123 +54,170 @@ function RecentTests({ testRuns = [] }) {
     });
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
+  const handleRowClick = (run) => {
+    setSelectedRun(run);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedRun(null);
+  };
+
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      border: '1px solid #e0e0e0'
-    }}>
-      <h3 style={{
-        margin: '0 0 16px 0',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        color: '#333'
-      }}>
-        最近测试运行
-      </h3>
+    <div className="recent-tests">
+      <div className="recent-tests-header">
+        <h3>最近测试运行</h3>
+        <div className="pagination-info">
+          显示 {currentPageData.length > 0 ? `${startIndex + 1}-${Math.min(endIndex, displayData.length)} / ${displayData.length} 条记录` : '0 条记录'}
+        </div>
+      </div>
 
       {displayData.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '40px',
-          color: '#888'
-        }}>
-          暂无测试运行记录
+        <div className="empty-state">
+          <div className="empty-icon">📊</div>
+          <p className="empty-title">暂无测试运行记录</p>
         </div>
       ) : (
-        <div style={{
-          overflowX: 'auto'
-        }}>
-          <table style={{
-            width: '100%',
-            borderCollapse: 'collapse'
-          }}>
-            <thead>
-              <tr style={{
-                borderBottom: '2px solid #e0e0e0',
-                textAlign: 'left'
-              }}>
-                <th style={{
-                  padding: '12px 8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#666'
-                }}>
-                  测试名称
-                </th>
-                <th style={{
-                  padding: '12px 8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#666'
-                }}>
-                  状态
-                </th>
-                <th style={{
-                  padding: '12px 8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#666'
-                }}>
-                  执行时长
-                </th>
-                <th style={{
-                  padding: '12px 8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#666'
-                }}>
-                  执行时间
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayData.map((run, index) => (
-                <tr
-                  key={run.id || index}
-                  style={{
-                    borderBottom: '1px solid #f0f0f0',
-                    hover: {
-                      background: '#f5f5f5'
-                    }
-                  }}
-                >
-                  <td style={{
-                    padding: '12px 8px',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>
-                    {run.test_name || run.name || `Test #${index + 1}`}
-                  </td>
-                  <td style={{
-                    padding: '12px 8px'
-                  }}>
-                    <span style={getStatusBadge(run.status || 'running')}>
-                      {run.status === 'passed' ? '通过' :
-                       run.status === 'failed' ? '失败' : '运行中'}
-                    </span>
-                  </td>
-                  <td style={{
-                    padding: '12px 8px',
-                    fontSize: '14px',
-                    color: '#666'
-                  }}>
-                    {formatDuration(run.duration)}
-                  </td>
-                  <td style={{
-                    padding: '12px 8px',
-                    fontSize: '14px',
-                    color: '#666'
-                  }}>
-                    {formatTime(run.timestamp || run.created_at)}
-                  </td>
+        <>
+          <div className="table-container">
+            <table className="tests-table">
+              <thead>
+                <tr>
+                  <th>测试名称</th>
+                  <th>状态</th>
+                  <th>执行时长</th>
+                  <th>执行时间</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {currentPageData.map((run, index) => (
+                  <tr
+                    key={run.id || `${startIndex + index}`}
+                    onClick={() => handleRowClick(run)}
+                    className="clickable-row"
+                  >
+                    <td className="test-name">
+                      {run.test_name || run.name || `Test #${startIndex + index + 1}`}
+                    </td>
+                    <td className="status-cell">
+                      {getStatusBadge(run.status || 'running')}
+                    </td>
+                    <td className="duration-cell">
+                      {formatDuration(run.duration)}
+                    </td>
+                    <td className="time-cell">
+                      {formatTime(run.timestamp || run.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 分页控件 */}
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <div className="pagination-info">
+                第 {currentPage} / {totalPages} 页
+              </div>
+
+              <div className="pagination-buttons">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                  aria-label="第一页"
+                >
+                  首页
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                  aria-label="上一页"
+                >
+                  上一页
+                </button>
+
+                {/* 页码按钮 */}
+                {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  const isActive = pageNum === currentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`pagination-btn page-number ${isActive ? 'active' : ''}`}
+                      aria-label={`第 ${pageNum} 页`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                  aria-label="下一页"
+                >
+                  下一页
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                  aria-label="末页"
+                >
+                  末页
+                </button>
+              </div>
+
+              <div className="page-size-selector">
+                <label>每页显示：</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                  className="page-size-select"
+                >
+                  <option value={10}>10条</option>
+                  <option value={20}>20条</option>
+                  <option value={50}>50条</option>
+                  <option value={100}>100条</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Test Run Detail Modal */}
+      {selectedRun && (
+        <TestRunDetailModal
+          run={selectedRun}
+          onClose={handleCloseDetail}
+        />
       )}
     </div>
   );
@@ -184,9 +228,9 @@ function generateMockData() {
   const statuses = ['passed', 'passed', 'passed', 'failed', 'running'];
   const data = [];
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 50; i++) {
     const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const timestamp = new Date(Date.now() - Math.random() * 3600000);
+    const timestamp = new Date(Date.now() - Math.random() * 86400000); // 过去24小时内的随机时间
 
     data.push({
       id: `run-${i}`,

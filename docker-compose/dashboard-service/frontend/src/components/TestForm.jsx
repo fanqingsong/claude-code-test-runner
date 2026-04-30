@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createTest, updateTest } from '../api';
-import StepEditor from './StepEditor';
+// import StepEditor from './StepEditor';  // Temporarily disabled due to loading issue
 
 function TestForm(props) {
   const { onTestCreated, editingTest, onCancel } = props;
@@ -147,15 +147,15 @@ function TestForm(props) {
   };
 
   return (
-    <div style={{background: '#fff', borderRadius: '6px', padding: '16px'}}>
-      <h2 style={{marginTop: 0, marginBottom: '16px', color: editingTest ? '#ff9800' : '#4caf50'}}>
+    <div style={{background: 'var(--cds-background)', borderRadius: 'var(--cds-border-radius)', padding: 'var(--cds-spacing-xl)'}}>
+      <h2 style={{marginTop: 0, marginBottom: 'var(--cds-spacing-lg)', color: editingTest ? 'var(--cds-support-warning)' : 'var(--cds-support-success)', fontSize: 'var(--cds-heading-04)', fontWeight: 'var(--cds-font-weight-regular)'}}>
         {editingTest ? '✏️ Edit Test' : 'Create New Test'}
       </h2>
 
       <form onSubmit={handleSubmit}>
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
-            Test Name <span style={{color: 'red'}}>*</span>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
+            Test Name <span style={{color: 'var(--cds-support-error)'}}>*</span>
           </label>
           <input
             type="text"
@@ -165,16 +165,21 @@ function TestForm(props) {
             required
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              boxSizing: 'border-box'
+              padding: '0 16px',
+              border: 'none',
+              borderBottom: '2px solid transparent',
+              borderRadius: 'var(--cds-border-radius)',
+              background: 'var(--cds-input-background)',
+              height: 'var(--cds-input-height)',
+              boxSizing: 'border-box',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           />
         </div>
 
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
             Description
           </label>
           <textarea
@@ -184,17 +189,21 @@ function TestForm(props) {
             rows={3}
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
+              padding: 'var(--cds-spacing-sm) 16px',
+              border: 'none',
+              borderBottom: '2px solid transparent',
+              borderRadius: 'var(--cds-border-radius)',
+              background: 'var(--cds-input-background)',
               boxSizing: 'border-box',
-              resize: 'vertical'
+              resize: 'vertical',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           />
         </div>
 
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
             Test ID
           </label>
           <input
@@ -204,17 +213,22 @@ function TestForm(props) {
             placeholder="e.g., login-001"
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              boxSizing: 'borderBox'
+              padding: '0 16px',
+              border: 'none',
+              borderBottom: '2px solid transparent',
+              borderRadius: 'var(--cds-border-radius)',
+              background: 'var(--cds-input-background)',
+              height: 'var(--cds-input-height)',
+              boxSizing: 'border-box',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           />
         </div>
 
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
-            Test URL <span style={{color: 'red'}}>*</span>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
+            Test URL <span style={{color: 'var(--cds-support-error)'}}>*</span>
           </label>
           <input
             type="url"
@@ -224,19 +238,24 @@ function TestForm(props) {
             required
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              boxSizing: 'border-box'
+              padding: '0 16px',
+              border: 'none',
+              borderBottom: '2px solid transparent',
+              borderRadius: 'var(--cds-border-radius)',
+              background: 'var(--cds-input-background)',
+              height: 'var(--cds-input-height)',
+              boxSizing: 'border-box',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           />
         </div>
 
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
             Environment Variables
           </label>
-          <div style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
+          <div style={{display: 'flex', gap: 'var(--cds-spacing-sm)', marginBottom: 'var(--cds-spacing-sm)'}}>
             <input
               type="text"
               value={envKey}
@@ -244,9 +263,14 @@ function TestForm(props) {
               placeholder="KEY"
               style={{
                 flex: 1,
-                padding: '6px',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
+                padding: '0 16px',
+                border: 'none',
+                borderBottom: '2px solid transparent',
+                borderRadius: 'var(--cds-border-radius)',
+                background: 'var(--cds-input-background)',
+                height: 'var(--cds-input-height)',
+                fontSize: 'var(--cds-body-short-01)',
+                fontFamily: 'var(--cds-font-family)'
               }}
             />
             <input
@@ -256,21 +280,29 @@ function TestForm(props) {
               placeholder="value"
               style={{
                 flex: 1,
-                padding: '6px',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
+                padding: '0 16px',
+                border: 'none',
+                borderBottom: '2px solid transparent',
+                borderRadius: 'var(--cds-border-radius)',
+                background: 'var(--cds-input-background)',
+                height: 'var(--cds-input-height)',
+                fontSize: 'var(--cds-body-short-01)',
+                fontFamily: 'var(--cds-font-family)'
               }}
             />
             <button
               type="button"
               onClick={addEnvironmentVar}
               style={{
-                padding: '6px 12px',
-                background: '#757575',
-                color: '#fff',
+                padding: 'var(--cds-spacing-sm) var(--cds-spacing-md)',
+                background: 'var(--cds-button-secondary)',
+                color: 'var(--cds-text-on-color)',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
+                borderRadius: 'var(--cds-border-radius)',
+                cursor: 'pointer',
+                height: 'var(--cds-input-height)',
+                fontSize: 'var(--cds-body-short-01)',
+                fontFamily: 'var(--cds-font-family)'
               }}
             >
               +
@@ -278,12 +310,12 @@ function TestForm(props) {
           </div>
           {Object.entries(formData.environment).map(([key, value]) => (
             <div key={key} style={{
-              fontSize: '12px',
-              color: '#666',
-              marginBottom: '4px',
+              fontSize: 'var(--cds-caption-01)',
+              color: 'var(--cds-text-secondary)',
+              marginBottom: 'var(--cds-spacing-xs)',
               display: 'flex',
               alignItems: 'center',
-              gap: '4px'
+              gap: 'var(--cds-spacing-xs)'
             }}>
               <span>{key} = {value}</span>
               <button
@@ -292,9 +324,9 @@ function TestForm(props) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#f44336',
+                  color: 'var(--cds-support-error)',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: 'var(--cds-body-short-01)'
                 }}
               >
                 ×
@@ -303,11 +335,11 @@ function TestForm(props) {
           ))}
         </div>
 
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', fontWeight: 'bold', marginBottom: '4px'}}>
+        <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
+          <label style={{display: 'block', fontWeight: 'var(--cds-font-weight-regular)', marginBottom: 'var(--cds-spacing-xs)', fontSize: 'var(--cds-caption-01)', letterSpacing: 'var(--cds-letter-spacing-caption)'}}>
             Tags
           </label>
-          <div style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
+          <div style={{display: 'flex', gap: 'var(--cds-spacing-sm)', marginBottom: 'var(--cds-spacing-sm)'}}>
             <input
               type="text"
               value={tagInput}
@@ -316,9 +348,14 @@ function TestForm(props) {
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               style={{
                 flex: 1,
-                padding: '6px',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
+                padding: '0 16px',
+                border: 'none',
+                borderBottom: '2px solid transparent',
+                borderRadius: 'var(--cds-border-radius)',
+                background: 'var(--cds-input-background)',
+                height: 'var(--cds-input-height)',
+                fontSize: 'var(--cds-body-short-01)',
+                fontFamily: 'var(--cds-font-family)'
               }}
             />
           </div>
@@ -328,13 +365,13 @@ function TestForm(props) {
                 key={tag}
                 style={{
                   display: 'inline-block',
-                  fontSize: '12px',
-                  background: '#e3f2fd',
-                  color: '#1976d2',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  marginRight: '4px',
-                  marginBottom: '4px'
+                  fontSize: 'var(--cds-caption-01)',
+                  background: 'var(--cds-tag-blue)',
+                  color: 'var(--cds-tag-blue-text)',
+                  padding: 'var(--cds-spacing-xs) var(--cds-spacing-sm)',
+                  borderRadius: 'var(--cds-border-radius-tag)',
+                  marginRight: 'var(--cds-spacing-xs)',
+                  marginBottom: 'var(--cds-spacing-xs)'
                 }}
               >
                 {tag}
@@ -344,10 +381,10 @@ function TestForm(props) {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#f44336',
+                    color: 'var(--cds-support-error)',
                     cursor: 'pointer',
-                    marginLeft: '4px',
-                    fontSize: '14px'
+                    marginLeft: 'var(--cds-spacing-xs)',
+                    fontSize: 'var(--cds-body-short-01)'
                   }}
                 >
                   ×
@@ -357,21 +394,26 @@ function TestForm(props) {
           </div>
         </div>
 
+        {/* StepEditor temporarily disabled due to loading issue
         <StepEditor steps={formData.test_steps} onChange={(steps) => setFormData({...formData, test_steps: steps})} />
+        */}
 
-        <div style={{display: 'flex', gap: '8px', marginTop: '16px'}}>
+        <div style={{display: 'flex', gap: 'var(--cds-spacing-sm)', marginTop: 'var(--cds-spacing-lg)'}}>
           <button
             type="submit"
             disabled={submitting}
             style={{
               flex: 1,
-              padding: '10px',
-              background: submitting ? '#9e9e9e' : (editingTest ? '#ff9800' : '#4caf50'),
-              color: '#fff',
+              padding: 'var(--cds-button-padding-sm)',
+              background: submitting ? 'var(--cds-interactive-02)' : (editingTest ? 'var(--cds-support-warning)' : 'var(--cds-support-success)'),
+              color: 'var(--cds-text-on-color)',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--cds-border-radius)',
               cursor: submitting ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
+              fontWeight: 'var(--cds-font-weight-regular)',
+              height: 'var(--cds-button-height)',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           >
             {submitting ? (editingTest ? 'Updating...' : 'Creating...') : (editingTest ? 'Update Test' : 'Create Test')}
@@ -381,12 +423,15 @@ function TestForm(props) {
             onClick={handleCancel}
             style={{
               flex: 1,
-              padding: '10px',
-              background: '#757575',
-              color: '#fff',
+              padding: 'var(--cds-button-padding-sm)',
+              background: 'var(--cds-button-secondary)',
+              color: 'var(--cds-text-on-color)',
               border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              borderRadius: 'var(--cds-border-radius)',
+              cursor: 'pointer',
+              height: 'var(--cds-button-height)',
+              fontSize: 'var(--cds-body-short-01)',
+              fontFamily: 'var(--cds-font-family)'
             }}
           >
             {editingTest ? 'Cancel' : 'Clear'}

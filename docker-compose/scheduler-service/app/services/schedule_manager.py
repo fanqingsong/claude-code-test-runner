@@ -86,21 +86,45 @@ class ScheduleManager:
             logger.error(f"Failed to calculate next run time for schedule {schedule.id}: {e}")
             raise
 
-    def parse_cron_expression(self, cron_expr: str) -> tuple:
+    def parse_cron_expression(self, cron_expr: str, tz_str: str = "UTC") -> datetime:
         """
-        Parse cron expression into Celery Crontab components.
+        Parse cron expression and calculate next run time.
 
         Args:
             cron_expr: Standard cron expression (5 fields)
+            tz_str: Timezone string (default: UTC)
 
         Returns:
-            Tuple of (minute, hour, day_of_month, month_of_year, day_of_week)
-        """
-        parts = cron_expr.split()
-        if len(parts) != 5:
-            raise ValueError(f"Cron expression must have 5 parts, got {len(parts)}")
+            Next run time as naive datetime object (without timezone info)
 
-        return tuple(parts)
+        Raises:
+            ValueError: If cron expression is invalid
+        """
+        try:
+            # Parse cron expression
+            parts = cron_expr.split()
+            if len(parts) != 5:
+                raise ValueError(f"Cron expression must have 5 parts, got {len(parts)}")
+
+            # Get current time in specified timezone
+            import pytz
+            try:
+                tz = pytz.timezone(tz_str)
+            except pytz.exceptions.UnknownTimeZoneError:
+                # Default to UTC if timezone is invalid
+                tz = timezone.utc
+
+            base_time = datetime.now(tz)
+
+            # Calculate next run time
+            cron = croniter(cron_expr, base_time)
+            next_time = cron.get_next(datetime)
+
+            # Convert to naive datetime (strip timezone info) for database compatibility
+            # Database stores TIMESTAMP WITHOUT TIME ZONE
+            return next_time.replace(tzinfo=None)
+        except Exception as e:
+            raise ValueError(f"Invalid cron expression '{cron_expr}': {str(e)}")
 
     async def sync_schedules(self) -> dict:
         """

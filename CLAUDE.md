@@ -1,0 +1,278 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Claude Code Test Runner is an AI-powered E2E testing framework with two deployment models:
+
+1. **CLI Tool** (`cli/`): Standalone test runner using Claude Code SDK + Playwright
+2. **Microservices** (`docker-compose/`): Multi-service architecture with PostgreSQL, Redis, and web dashboard
+
+The system executes natural language test definitions using Claude Code's AI to perform browser automation through Playwright MCP.
+
+## Architecture
+
+### CLI Architecture
+```
+CLI (Bun) → Claude Code SDK → Anthropic API
+                ↓
+         Playwright MCP → Browser
+                ↓
+         Test State MCP (local HTTP server)
+```
+
+### Microservices Architecture
+```
+Frontend (React/Vite) → Nginx (Port 8080) → Test Case API (FastAPI :8001)
+                                        ↓
+                                    Dashboard Service (Express :8003)
+                                        ↓
+                                    Scheduler API (FastAPI :8002)
+                                        ↓
+                    PostgreSQL (Port 5432) ← Celery Workers ← Redis Queue
+```
+
+**Service Interactions:**
+- Test Case Service manages test definitions and steps
+- Scheduler Service creates test runs and coordinates execution
+- Celery Workers execute tests using Playwright and save results to PostgreSQL
+- Dashboard Service queries PostgreSQL for analytics and visualization
+- Frontend uses hash-based routing: `#dashboard`, `#tests`, `#schedules`
+
+## Development Commands
+
+### CLI Development
+```bash
+cd cli
+bun install                    # Install dependencies
+./init.dev.sh                 # Initialize development environment
+bun run build                 # Build CLI
+./dist/cc-test-runner -t ./samples/pdca-e2e-tests.json -v
+bun test                      # Run tests
+```
+
+### Microservices Development
+```bash
+cd docker-compose
+docker-compose up -d          # Start all services with hot-reload
+docker-compose ps             # Check service status
+docker-compose logs -f [service]  # View logs
+docker-compose restart [service]  # Restart specific service
+```
+
+**Hot-reload is enabled for:**
+- `scheduler-service/app:/app/app` (API and worker)
+- `dashboard-service/src:/app/src` (backend)
+- `dashboard-service/frontend/src:/app/frontend/src` (frontend)
+
+Changes to these directories are automatically reflected without rebuilding.
+
+### Service-Specific Commands
+
+**Dashboard Service:**
+```bash
+cd docker-compose/dashboard-service
+npm run dev                    # Backend hot-reload
+npm run frontend:dev           # Frontend dev server
+npm run dev:full               # Both backend and frontend
+```
+
+**Test Case Service:**
+```bash
+docker-compose exec test-case-service pytest
+docker-compose exec test-case-service pytest tests/test_endpoints.py -v
+```
+
+**Scheduler Service:**
+```bash
+docker-compose exec scheduler-service pytest
+docker-compose exec scheduler-worker celery -A app.core.celery_app inspect active
+```
+
+### Database Operations
+```bash
+# Connect to PostgreSQL
+docker exec -it cc-test-postgres psql -U cc_test_user -d cc_test_db
+
+# Check specific table
+docker exec cc-test-postgres psql -U cc_test_user -d cc_test_db -c "\d test_runs"
+docker exec cc-test-postgres psql -U cc_test_user -d cc_test_db -c "SELECT COUNT(*) FROM test_cases"
+
+# Backup
+docker exec cc-test-postgres pg_dump -U cc_test_user cc_test_db > backup.sql
+```
+
+## Database Schema Relationships
+
+**Core Tables:**
+- `test_definitions`: Test case definitions (the "what")
+- `test_steps`: Sequential steps for each test definition
+- `test_runs`: Execution instances with status and timestamps
+- `test_cases`: Individual test step results (linked to test_runs)
+- `schedules`: Cron-based test scheduling configurations
+
+**Important Relationships:**
+- `test_runs.test_definition_id` → `test_definitions.id`
+- `test_cases.run_id` → `test_runs.id` (execution details)
+- `test_cases.test_definition_id` → `test_definitions.id`
+- `schedules.test_definition_id` → `test_definitions.id` (single test)
+- `schedules.test_suite_id` → `test_suites.id` (multiple tests)
+
+**Critical Field Distinction:**
+- `test_runs.total_tests`: Number of test steps in this run (cumulative)
+- `test_runs.total_duration_ms`: Execution duration in milliseconds
+- `test_cases.duration`: Individual step duration in milliseconds
+- Use `test_definitions` count for "test case总数" not `test_runs.total_tests`
+
+## Frontend Development
+
+**⚠️ IMPORTANT: Always consult DESIGN.md before writing UI code**
+
+This project uses an IBM Carbon-inspired design system. Before creating or modifying any UI components:
+
+1. **Read DESIGN.md** - Complete design system specifications
+2. **Follow the design tokens** - Use `--cds-*` naming convention for CSS variables
+3. **Apply Carbon principles** - 0px border-radius, flat design, IBM Plex Sans typography
+4. **Use the color palette** - IBM Blue 60 (#0f62fe) as the sole accent color
+
+**Design System Highlights:**
+- **Border-radius**: 0px on buttons, inputs, cards (24px only for tags/labels)
+- **Colors**: Monochromatic grays + IBM Blue 60 (#0f62fe)
+- **Typography**: IBM Plex Sans (weight 300/400/600 - NO weight 700)
+- **Spacing**: 8px base unit, 16px component padding, 48px button height
+- **Depth**: Background-color layering, not shadows (flat design)
+- **Inputs**: Bottom-border only, #f4f4f4 background
+
+**Routing:** Hash-based (`#dashboard`, `#tests`, `#schedules`)
+
+**API Calls:** All go through dashboard service proxy on port 8013
+- Test Case API: `http://localhost:8011/api/v1/` (direct)
+- Scheduler API: `http://localhost:8012/api/v1/` (direct)
+- Dashboard API: `http://localhost:8013/api/` (analytics)
+
+**Component Patterns:**
+- Table layouts for lists (TestList, ScheduleList, RecentTests)
+- Modal popups for create/edit forms
+- Pagination for large datasets
+- Status badges with color coding (passed=green, failed=red, running=blue)
+
+**State Management:**
+- `refreshKey` pattern to trigger list refreshes after CRUD operations
+- `on*Created` callbacks to close modals and refresh lists
+- Direct state updates, no Redux/context for simple cases
+
+**Current UI Migration Status:**
+The existing UI components were built using Material Design patterns and need to be migrated to the IBM Carbon-inspired design system:
+
+- ❌ **Border-radius**: Currently uses 4-8px (should be 0px)
+- ❌ **Colors**: Uses Material Design palette (#1976d2 blue, #4caf50 green) - needs IBM Blue 60
+- ❌ **Typography**: Uses Arial fallback - needs IBM Plex Sans
+- ❌ **Shadows**: Cards have box-shadows - should be flat with background-color layering
+- ❌ **Buttons**: Rounded with gradients - should be rectangular, flat colors
+
+**Migration Priority:**
+1. Create global CSS design token system (`--cds-*` variables)
+2. Update App.jsx with IBM Plex Sans and design tokens
+3. Migrate shared components (Modal, Button, Input, Table)
+4. Update page-specific components to use new design system
+
+**When modifying UI:**
+- Always check DESIGN.md first for the correct patterns
+- Prefer creating new components following the design system over patching old ones
+- Test responsive behavior at 320px, 672px, 1056px, and 1312px breakpoints
+
+## Backend Development
+
+**Scheduler Service (FastAPI):**
+- `app/api/v1/endpoints/`: REST endpoints
+- `app/services/`: Business logic (execution_service.py, schedule_manager.py)
+- `app/tasks/`: Celery tasks (test_execution.py, schedule_sync.py)
+- `app/models/`: SQLAlchemy ORM models (test_run.py, schedule.py, test_case.py)
+
+**Dashboard Service (Express):**
+- `src/db.js`: Database queries using pg
+- `src/server.js`: Express server with API routes
+- `frontend/src/`: React frontend
+
+**Critical Service Methods:**
+- `ExecutionService.save_test_results()`: Saves both test_runs summary AND test_cases details
+- `ScheduleManager.parse_cron_expression()`: Validates cron expressions
+- `DatabaseManager.getRecentTestRuns()`: Must JOIN with test_definitions to get test names
+
+## Test Execution Flow
+
+1. **Schedule Trigger:** Celery Beat detects due schedule → calls `schedule_sync.execute_scheduled_tests()`
+2. **Job Creation:** Creates TestRun record with status='pending'
+3. **Test Execution:** Worker calls `test_execution.execute_test()` with test_definition_id
+4. **Browser Automation:** Playwright executes steps using AI interpretation
+5. **Result Saving:** `ExecutionService.save_test_results()` saves:
+   - Summary to `test_runs` table
+   - Individual step results to `test_cases` table
+6. **Dashboard Update:** Frontend queries PostgreSQL for latest results
+
+**Key Timing Fields:**
+- All timestamps in PostgreSQL are naive datetime (no timezone)
+- Use `datetime.utcnow()` for consistency, not `datetime.now(timezone.utc)`
+- JavaScript timestamps are milliseconds, PostgreSQL timestamps are seconds
+
+## Common Issues and Solutions
+
+**Issue:** Scheduled tests not executing
+- **Solution:** Check Celery Beat logs, verify schedule is_active=true, ensure cron expression is valid
+
+**Issue:** Test results not showing in dashboard
+- **Solution:** Verify `test_cases` records are created (check `run_id` foreign key), ensure JOIN includes test_definitions table
+
+**Issue:** Hot-reload not working
+- **Solution:** Volume mounts are in docker-compose.yml, changes should auto-apply. If not, restart the specific service.
+
+**Issue:** "测试用例总数" mismatch (72 vs 4)
+- **Solution:** Use `COUNT(*) FROM test_definitions` for test count, not `SUM(total_tests) FROM test_runs`
+
+**Issue:** Invalid Date in frontend
+- **Solution:** Database timestamps are milliseconds, use `new Date(parseInt(timestamp))` in JavaScript
+
+## Configuration Files
+
+**CLI:** `cli/cc-test.yaml` (YAML configuration with environment detection)
+**Microservices:** `docker-compose/.env` (PostgreSQL, Redis, API keys)
+
+**Environment Variables:**
+- `ANTTHROPIC_API_KEY`: Required for Claude Code access
+- `POSTGRES_PASSWORD`: Database credentials
+- `SECRET_KEY`: JWT signing key
+
+## Testing Strategy
+
+**Unit Tests:** Co-located with source files
+**Integration Tests:** `cli/tests/integration/`
+**E2E Tests:** Use the CLI itself to test the framework
+
+**Test Execution Verification:**
+1. Check test_runs table for summary records
+2. Check test_cases table for step-by-step results
+3. Verify status transitions: pending → running → passed/failed
+4. Confirm timestamps and durations are saved correctly
+
+## Performance Considerations
+
+**Dashboard Queries:**
+- Use `created_at` for filtering (always populated), not `start_time` (often NULL)
+- Index on `test_runs.created_at` for time-based queries
+- Join with test_definitions to get test names (add test_definition_id to queries)
+
+**Celery Workers:**
+- Default concurrency: 2 workers
+- Scale with: `docker-compose up -d --scale scheduler-worker=4`
+- Task routing: test_execution tasks go to workers, schedule_sync to beat
+
+## API Port Mappings
+
+- **8080:** Nginx reverse proxy (routes to backend services)
+- **8011:** Test Case Service (FastAPI)
+- **8012:** Scheduler Service (FastAPI)
+- **8013:** Dashboard Service (Express + Vite)
+- **5173:** Vite dev server (for React frontend hot-reload)
+- **5433:** PostgreSQL (external access)
+- **6380:** Redis (external access)

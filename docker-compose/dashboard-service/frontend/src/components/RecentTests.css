@@ -1,0 +1,302 @@
+/* Recent Tests - IBM Carbon Design System */
+
+.recent-tests {
+  width: 100%;
+  background: var(--cds-background);
+  border-radius: var(--cds-border-radius);
+  padding: var(--cds-spacing-2xl);
+}
+
+.recent-tests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--cds-spacing-2xl);
+}
+
+.recent-tests-header h3 {
+  margin: 0;
+  font-size: var(--cds-heading-04);
+  font-weight: var(--cds-font-weight-regular);
+  color: var(--cds-text-primary);
+}
+
+.pagination-info {
+  font-size: var(--cds-body-short-01);
+  color: var(--cds-text-secondary);
+}
+
+/* Empty State */
+
+.empty-state {
+  text-align: center;
+  padding: var(--cds-layout-2xl) var(--cds-layout-sm);
+  color: var(--cds-text-secondary);
+}
+
+.empty-icon {
+  font-size: var(--cds-display-02);
+  margin-bottom: var(--cds-spacing-lg);
+  color: var(--cds-text-placeholder);
+}
+
+.empty-title {
+  font-size: var(--cds-body-long-01);
+  margin: 0;
+  color: var(--cds-text-secondary);
+}
+
+/* Table Styles */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--cds-border-radius);
+  background: var(--cds-background);
+}
+
+.tests-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cds-background);
+}
+
+.tests-table thead {
+  background: var(--cds-background-layer-01);
+  color: var(--cds-text-primary);
+}
+
+.tests-table thead th {
+  padding: var(--cds-table-header-padding);
+  text-align: left;
+  font-weight: var(--cds-font-weight-semibold);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  letter-spacing: var(--cds-letter-spacing-body);
+  color: var(--cds-text-primary);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.tests-table tbody tr {
+  border-bottom: 1px solid var(--cds-border-subtle);
+  transition: background-color var(--cds-transition-normal);
+}
+
+.tests-table tbody tr:hover {
+  background-color: var(--cds-background-layer-01);
+}
+
+.tests-table tbody tr.clickable-row {
+  cursor: pointer;
+}
+
+.tests-table tbody tr.clickable-row:hover {
+  background-color: var(--cds-background-layer-02);
+}
+
+.tests-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tests-table td {
+  padding: var(--cds-table-cell-padding);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  color: var(--cds-text-primary);
+}
+
+/* Cell Styles */
+
+.test-name {
+  font-weight: var(--cds-font-weight-regular);
+  color: var(--cds-text-primary);
+}
+
+/* Status Badges */
+
+.status-badge {
+  display: inline-block;
+  padding: var(--cds-spacing-xs) var(--cds-spacing-md);
+  border-radius: var(--cds-border-radius-tag);
+  font-size: var(--cds-caption-01);
+  font-family: var(--cds-font-family);
+  font-weight: var(--cds-font-weight-regular);
+  text-transform: uppercase;
+  letter-spacing: var(--cds-letter-spacing-caption);
+}
+
+.status-badge.passed {
+  background: var(--cds-tag-green);
+  color: var(--cds-tag-green-text);
+}
+
+.status-badge.failed {
+  background: var(--cds-tag-red);
+  color: var(--cds-tag-red-text);
+}
+
+.status-badge.running {
+  background: var(--cds-tag-blue);
+  color: var(--cds-tag-blue-text);
+}
+
+.duration-cell,
+.time-cell {
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-body-short-02);
+}
+
+/* Pagination Controls */
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--cds-spacing-2xl);
+  padding-top: var(--cds-spacing-2xl);
+  border-top: 1px solid var(--cds-border-subtle);
+  flex-wrap: wrap;
+  gap: var(--cds-spacing-lg);
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: var(--cds-spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: var(--cds-spacing-sm) var(--cds-spacing-md);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: var(--cds-border-radius);
+  background: var(--cds-background);
+  color: var(--cds-text-primary);
+  font-size: var(--cds-body-short-02);
+  font-family: var(--cds-font-family);
+  cursor: pointer;
+  transition: all var(--cds-transition-normal);
+  min-width: 36px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--cds-interactive-01);
+  color: var(--cds-text-on-color);
+  border-color: var(--cds-interactive-01);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn.page-number {
+  font-weight: var(--cds-font-weight-regular);
+}
+
+.pagination-btn.page-number.active {
+  background: var(--cds-interactive-01);
+  color: var(--cds-text-on-color);
+  border-color: var(--cds-interactive-01);
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-sm);
+  font-size: var(--cds-body-short-02);
+  color: var(--cds-text-secondary);
+}
+
+.page-size-selector label {
+  font-weight: var(--cds-font-weight-regular);
+}
+
+.page-size-select {
+  padding: var(--cds-spacing-sm) var(--cds-spacing-md);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: var(--cds-border-radius);
+  background: var(--cds-background);
+  color: var(--cds-text-primary);
+  font-size: var(--cds-body-short-02);
+  font-family: var(--cds-font-family);
+  cursor: pointer;
+  transition: border-color var(--cds-transition-normal);
+}
+
+.page-size-select:hover {
+  border-color: var(--cds-interactive-01);
+}
+
+.page-size-select:focus {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}
+
+/* Responsive Design */
+
+@media (max-width: 768px) {
+  .recent-tests {
+    padding: var(--cds-spacing-xl);
+  }
+
+  .recent-tests-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--cds-spacing-sm);
+  }
+
+  .tests-table {
+    font-size: var(--cds-body-short-02);
+  }
+
+  .tests-table thead th,
+  .tests-table td {
+    padding: var(--cds-spacing-md) var(--cds-spacing-lg);
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-btn {
+    padding: var(--cds-spacing-xs) var(--cds-spacing-sm);
+    font-size: var(--cds-caption-01);
+    min-width: 32px;
+  }
+
+  .page-size-selector {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-container {
+    border-radius: var(--cds-border-radius);
+  }
+
+  .tests-table thead th,
+  .tests-table td {
+    padding: var(--cds-spacing-sm) var(--cds-spacing-md);
+    font-size: var(--cds-caption-01);
+  }
+
+  .test-name {
+    font-size: var(--cds-body-short-01);
+  }
+
+  .status-badge {
+    font-size: 11px;
+    padding: var(--cds-spacing-xs) var(--cds-spacing-sm);
+  }
+
+  .pagination-btn {
+    padding: var(--cds-spacing-xs) var(--cds-spacing-sm);
+    font-size: 11px;
+    min-width: 28px;
+  }
+}
