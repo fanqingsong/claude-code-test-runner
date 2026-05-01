@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import ejs from 'ejs';
 import { readFile } from 'fs/promises';
+import jwt from 'jsonwebtoken';
 import { DatabaseManager } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -50,6 +51,36 @@ export class DashboardService {
     });
   }
 
+  /**
+   * Verify JWT token and extract user information
+   */
+  async verifyToken(req) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.substring(7);
+
+    try {
+      const decoded = jwt.verify(token, process.env.SECRET_KEY || 'your-secret-key');
+      return decoded;
+    } catch (error) {
+      console.error('Token verification failed:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Check if user is admin
+   */
+  isAdmin(user) {
+    if (!user) return false;
+    // Check if user has admin role in Casdoor format or is_admin in local format
+    return user.roles?.includes('admin') || user.is_admin === true || user.roles === 'admin';
+  }
+
   setupRoutes() {
     // Health check
     this.app.get('/health', async (req, res) => {
@@ -64,11 +95,20 @@ export class DashboardService {
     // Get dashboard summary
     this.app.get('/api/dashboard', async (req, res) => {
       try {
+        const user = await this.verifyToken(req);
+
+        if (!user) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const days = parseInt(req.query.days) || 30;
+        const userId = parseInt(user.sub);
+        const isAdmin = this.isAdmin(user);
+
         const [summary, byDay, totalDefinitions] = await Promise.all([
-          this.db.getDashboardSummary(days),
-          this.db.getTestRunsByDay(days),
-          this.db.getTotalTestDefinitions()
+          this.db.getDashboardSummary(days, userId, isAdmin),
+          this.db.getTestRunsByDay(days, userId, isAdmin),
+          this.db.getTotalTestDefinitions(userId, isAdmin)
         ]);
 
         res.json({
@@ -86,8 +126,17 @@ export class DashboardService {
     // Get test runs
     this.app.get('/api/test-runs', async (req, res) => {
       try {
+        const user = await this.verifyToken(req);
+
+        if (!user) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const limit = parseInt(req.query.limit) || 100;
-        const runs = await this.db.getRecentTestRuns(limit);
+        const userId = parseInt(user.sub);
+        const isAdmin = this.isAdmin(user);
+
+        const runs = await this.db.getRecentTestRuns(limit, userId, isAdmin);
         res.json(runs);
       } catch (error) {
         console.error('Error fetching test runs:', error);

@@ -249,12 +249,10 @@ services:
   casdoor:
     image: casbin/casdoor:latest
     container_name: cc-test-casdoor
-    environment:
-      RUNNING_IN_DOCKER: "true"
-      DRIVER: "postgres"
-      SQL_CONNECTION_STRING: "postgres://casdoor:${CASDOOR_POSTGRES_PASSWORD}@casdoor-postgres:5432/casdoor?sslmode=disable"
     ports:
       - "8002:8000"
+    volumes:
+      - ./casdoor/conf/app.conf:/conf/app.conf:ro
     depends_on:
       casdoor-postgres:
         condition: service_healthy

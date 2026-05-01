@@ -44,18 +44,32 @@ export class DatabaseManager {
   /**
    * Get recent test runs
    */
-  async getRecentTestRuns(limit = 100) {
-    const text = `
+  async getRecentTestRuns(limit = 100, userId = null, isAdmin = false) {
+    let text = `
       SELECT
         tr.id, tr.run_id, tr.start_time, tr.end_time, tr.total_tests, tr.passed, tr.failed, tr.skipped,
         tr.total_duration_ms, tr.status, tr.created_at, tr.test_definition_id,
-        td.name as test_name
+        td.name as test_name, td.created_by as test_owner
       FROM test_runs tr
       LEFT JOIN test_definitions td ON tr.test_definition_id = td.id
-      ORDER BY tr.created_at DESC
-      LIMIT $1
     `;
-    return await this.query(text, [limit]);
+
+    const params = [];
+    let paramCount = 0;
+
+    // Filter by user if not admin
+    if (!isAdmin && userId) {
+      text += ` WHERE td.created_by = $${++paramCount}`;
+      params.push(userId);
+    }
+
+    text += `
+      ORDER BY tr.created_at DESC
+      LIMIT $${++paramCount}
+    `;
+    params.push(limit);
+
+    return await this.query(text, params);
   }
 
   /**
@@ -76,10 +90,10 @@ export class DatabaseManager {
   /**
    * Get dashboard summary data
    */
-  async getDashboardSummary(days = 30) {
+  async getDashboardSummary(days = 30, userId = null, isAdmin = false) {
     const startTime = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
 
-    const text = `
+    let text = `
       SELECT
         COUNT(*) as total_runs,
         SUM(passed) as total_passed,
@@ -89,47 +103,77 @@ export class DatabaseManager {
         COUNT(CASE WHEN status = 'passed' THEN 1 END) as successful_runs,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_runs,
         COUNT(CASE WHEN total_duration_ms IS NOT NULL THEN 1 END) as runs_with_duration
-      FROM test_runs
-      WHERE created_at > $1
+      FROM test_runs tr
+      LEFT JOIN test_definitions td ON tr.test_definition_id = td.id
+      WHERE tr.created_at > $1
     `;
 
-    const result = await this.query(text, [startTime]);
+    const params = [startTime];
+
+    // Filter by user if not admin
+    if (!isAdmin && userId) {
+      text += ` AND td.created_by = $2`;
+      params.push(userId);
+    }
+
+    const result = await this.query(text, params);
     return result[0];
   }
 
   /**
    * Get total count of test definitions
    */
-  async getTotalTestDefinitions() {
-    const text = `
+  async getTotalTestDefinitions(userId = null, isAdmin = false) {
+    let text = `
       SELECT COUNT(*) as total_definitions
       FROM test_definitions
       WHERE is_active = true
     `;
-    const result = await this.query(text);
+
+    const params = [];
+
+    // Filter by user if not admin
+    if (!isAdmin && userId) {
+      text += ` AND created_by = $1`;
+      params.push(userId);
+    }
+
+    const result = await this.query(text, params);
     return result[0].total_definitions;
   }
 
   /**
    * Get test runs grouped by day
    */
-  async getTestRunsByDay(days = 30) {
+  async getTestRunsByDay(days = 30, userId = null, isAdmin = false) {
     const startTime = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
 
-    const text = `
+    let text = `
       SELECT
-        DATE_TRUNC('day', created_at) as date,
+        DATE_TRUNC('day', tr.created_at) as date,
         COUNT(*) as total_runs,
-        SUM(passed) as total_passed,
-        SUM(failed) as total_failed,
-        SUM(total_tests) as total_tests
-      FROM test_runs
-      WHERE created_at > $1
-      GROUP BY DATE_TRUNC('day', created_at)
+        SUM(tr.passed) as total_passed,
+        SUM(tr.failed) as total_failed,
+        SUM(tr.total_tests) as total_tests
+      FROM test_runs tr
+      LEFT JOIN test_definitions td ON tr.test_definition_id = td.id
+      WHERE tr.created_at > $1
+    `;
+
+    const params = [startTime];
+
+    // Filter by user if not admin
+    if (!isAdmin && userId) {
+      text += ` AND td.created_by = $2`;
+      params.push(userId);
+    }
+
+    text += `
+      GROUP BY DATE_TRUNC('day', tr.created_at)
       ORDER BY date DESC
     `;
 
-    return await this.query(text, [startTime]);
+    return await this.query(text, params);
   }
 
   /**

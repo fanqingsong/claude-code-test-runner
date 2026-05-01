@@ -4,10 +4,8 @@
  * Handles authentication with both local JWT and Casdoor SSO.
  */
 
-// All requests go through Nginx reverse proxy on port 8080
-const BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:8080'
-  : '';
+// Use the current origin (protocol + hostname + port) to work in all environments
+const BASE_URL = window.location.origin;
 
 const API_BASE_URL = `${BASE_URL}/api/v1`;
 
