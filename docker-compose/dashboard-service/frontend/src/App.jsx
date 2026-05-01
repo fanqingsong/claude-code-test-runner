@@ -79,13 +79,54 @@ function AppContent() {
     setEditingTest(null);
   };
 
+  const getAuthHeadersSafe = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const buildHttpErrorMessage = async (response, fallback) => {
+    const status = response?.status;
+    const statusText = response?.statusText || '';
+    let bodyText = '';
+    try {
+      bodyText = await response.text();
+    } catch {
+      bodyText = '';
+    }
+
+    let detail = '';
+    if (bodyText) {
+      try {
+        const json = JSON.parse(bodyText);
+        detail =
+          json?.detail ||
+          json?.error ||
+          json?.message ||
+          (typeof json === 'string' ? json : '') ||
+          bodyText;
+      } catch {
+        detail = bodyText;
+      }
+    }
+
+    const normalized = (detail || '').toString().trim();
+    const base = fallback || '请求失败';
+    const suffixParts = [
+      typeof status === 'number' ? `HTTP ${status}` : null,
+      statusText ? statusText : null,
+      normalized ? normalized : null,
+    ].filter(Boolean);
+
+    return suffixParts.length ? `${base}（${suffixParts.join(' - ')}）` : base;
+  };
+
   const handleTestRun = async (testId) => {
     try {
       const response = await fetch('/api/v1/jobs/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...authService.getAuthHeaders()
+          ...getAuthHeadersSafe()
         },
         body: JSON.stringify({ test_definition_ids: [testId] })
       });
@@ -126,13 +167,13 @@ function AppContent() {
       const response = await fetch(`/api/v1/schedules/${scheduleId}/trigger`, {
         method: 'POST',
         headers: {
-          ...authService.getAuthHeaders()
+          ...getAuthHeadersSafe()
         }
       });
       if (response.ok) {
         alert('调度已触发！');
       } else {
-        alert('触发失败');
+        alert(await buildHttpErrorMessage(response, '触发失败'));
       }
     } catch (err) {
       alert('错误: ' + err.message);
@@ -145,7 +186,7 @@ function AppContent() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...authService.getAuthHeaders()
+          ...getAuthHeadersSafe()
         },
         body: JSON.stringify({ is_active: isActive })
       });

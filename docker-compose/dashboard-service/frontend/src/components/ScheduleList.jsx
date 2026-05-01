@@ -8,13 +8,84 @@ export default function ScheduleList({ refreshKey, onEditSchedule, onTriggerSche
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
+  const buildHttpErrorMessage = async (response, fallback) => {
+    const status = response?.status;
+    const statusText = response?.statusText || '';
+
+    let bodyText = '';
+    try {
+      bodyText = await response.text();
+    } catch {
+      bodyText = '';
+    }
+
+    let detail = '';
+    if (bodyText) {
+      try {
+        const json = JSON.parse(bodyText);
+        detail =
+          json?.detail ||
+          json?.error ||
+          json?.message ||
+          (typeof json === 'string' ? json : '') ||
+          bodyText;
+      } catch {
+        detail = bodyText;
+      }
+    }
+
+    const normalized = (detail || '').toString().trim();
+    const base = fallback || '请求失败';
+    const suffixParts = [
+      typeof status === 'number' ? `HTTP ${status}` : null,
+      statusText ? statusText : null,
+      normalized ? normalized : null,
+    ].filter(Boolean);
+
+    return suffixParts.length ? `${base}（${suffixParts.join(' - ')}）` : base;
+  };
+
+  const getSafeAuthHeaders = () => {
+    // Be defensive: in some dev setups the loaded authService bundle can be stale.
+    // Always try to attach the raw token if it exists.
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return typeof authService?.getAuthHeaders === 'function' ? authService.getAuthHeaders() : {};
+  };
+
+  const ensureAuthOrRedirect = async () => {
+    if (!authService?.isAuthenticated?.()) {
+      window.location.hash = 'login';
+      throw new Error('未登录或登录已过期，请重新登录');
+    }
+    try {
+      await authService.ensureValidToken();
+    } catch {
+      window.location.hash = 'login';
+      throw new Error('登录已过期，请重新登录');
+    }
+  };
+
   const loadSchedules = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/schedules/', {
-        headers: authService.getAuthHeaders()
+      await ensureAuthOrRedirect();
+      const response = await fetch(`${window.location.origin}/api/v1/schedules/`, {
+        headers: getSafeAuthHeaders()
       });
-      if (!response.ok) throw new Error('Failed to load schedules');
+      if (response.status === 401) {
+        window.location.hash = 'login';
+        throw new Error('登录已过期，请重新登录');
+      }
+      if (!response.ok) {
+        const msg = await buildHttpErrorMessage(response, '加载调度列表失败');
+        if (response.status === 403) {
+          throw new Error(`${msg}\n（通常表示请求没带上 Authorization，或 token 验证失败/格式不正确）`);
+        }
+        throw new Error(msg);
+      }
       const data = await response.json();
       setSchedules(data.items || data);
     } catch (err) {
@@ -38,11 +109,21 @@ export default function ScheduleList({ refreshKey, onEditSchedule, onTriggerSche
 
     setDeletingId(id);
     try {
-      const response = await fetch(`/api/v1/schedules/${id}`, {
+      await ensureAuthOrRedirect();
+      const response = await fetch(`${window.location.origin}/api/v1/schedules/${id}`, {
         method: 'DELETE',
-        headers: authService.getAuthHeaders()
+        headers: getSafeAuthHeaders()
       });
-      if (!response.ok) throw new Error('Failed to delete schedule');
+      if (response.status === 401) {
+        window.location.hash = 'login';
+        throw new Error('登录已过期，请重新登录');
+      }
+      if (response.status === 403) {
+        throw new Error('无权限删除该调度（403）。');
+      }
+      if (!response.ok) {
+        throw new Error(await buildHttpErrorMessage(response, '删除调度失败'));
+      }
       loadSchedules();
     } catch (err) {
       alert('删除失败: ' + err.message);

@@ -150,8 +150,13 @@ class ExecutionService:
         Returns:
             Created TestRun object
         """
+        # Use the first test_definition_id as the primary association
+        # This allows the dashboard to display the test name
+        primary_test_definition_id = test_definition_ids[0] if test_definition_ids else None
+
         test_run = TestRun(
             schedule_id=schedule_id,
+            test_definition_id=primary_test_definition_id,
             run_id=run_id,
             test_cases={'test_definition_ids': test_definition_ids, 'environment': environment},
             status='pending'

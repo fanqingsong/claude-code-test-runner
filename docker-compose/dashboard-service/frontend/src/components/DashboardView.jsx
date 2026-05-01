@@ -101,8 +101,11 @@ function DashboardView() {
   };
 
   useEffect(() => {
-    loadDashboardData();
-  }, [timeRange]);
+    // Only load data if user is authenticated
+    if (user) {
+      loadDashboardData();
+    }
+  }, [timeRange, user]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);

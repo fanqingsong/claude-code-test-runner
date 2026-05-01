@@ -5,15 +5,12 @@ Represents a test case execution result.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
-
-if TYPE_CHECKING:
-    from app.models.user import User
 
 
 class TestCase(Base):
@@ -57,13 +54,6 @@ class TestCase(Base):
         nullable=False,
         default=datetime.utcnow,
         server_default=func.now()
-    )
-
-    # Relationships
-    user: Mapped[Optional["User"]] = relationship(
-        "User",
-        foreign_keys=[user_id],
-        backref="test_cases"
     )
 
     def __repr__(self):

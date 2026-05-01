@@ -120,9 +120,10 @@ class ScheduleManager:
             cron = croniter(cron_expr, base_time)
             next_time = cron.get_next(datetime)
 
-            # Convert to naive datetime (strip timezone info) for database compatibility
-            # Database stores TIMESTAMP WITHOUT TIME ZONE
-            return next_time.replace(tzinfo=None)
+            # Convert to UTC before stripping timezone info for database compatibility
+            # Database stores TIMESTAMP WITHOUT TIME ZONE, so we store UTC time
+            next_time_utc = next_time.astimezone(timezone.utc)
+            return next_time_utc.replace(tzinfo=None)
         except Exception as e:
             raise ValueError(f"Invalid cron expression '{cron_expr}': {str(e)}")
 

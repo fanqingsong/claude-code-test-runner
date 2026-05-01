@@ -450,6 +450,25 @@ async def trigger_schedule(
     # Check execution limits
     can_execute = await get_execution_service().check_execution_limit(schedule, db)
     if not can_execute:
+        # Make this endpoint idempotent for UX: if there's already a pending/running run,
+        # return that run_id instead of failing with 429.
+        existing_stmt = (
+            select(TestRun)
+            .where(
+                TestRun.schedule_id == schedule.id,
+                TestRun.status.in_(["pending", "running"]),
+            )
+            .order_by(TestRun.created_at.desc())
+            .limit(1)
+        )
+        existing_result = await db.execute(existing_stmt)
+        existing_run = existing_result.scalar_one_or_none()
+        if existing_run:
+            return ScheduleTriggerResponse(
+                run_id=existing_run.run_id,
+                status=existing_run.status,
+            )
+
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Execution limit reached or another execution is in progress"

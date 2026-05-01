@@ -47,7 +47,7 @@ celery_app.conf.update(
 # Configure periodic tasks for Celery Beat
 from celery.schedules import crontab
 
-# Maintenance tasks + user schedules
+# Maintenance tasks only - user schedules are synced dynamically
 celery_app.conf.beat_schedule = {
     # Sync schedules to Celery Beat every 5 minutes
     "sync-schedules-to-beat": {
@@ -63,12 +63,5 @@ celery_app.conf.beat_schedule = {
     "cleanup-old-test-runs": {
         "task": "app.tasks.schedule_sync.cleanup_old_test_runs",
         "schedule": crontab(hour=2, minute=0),
-    },
-    # User schedule: "每小时中文测试11" - every minute
-    "schedule_3": {
-        "task": "app.tasks.schedule_sync.execute_scheduled_tests",
-        "schedule": crontab(minute='*'),
-        "args": [3],
-        "options": {"expires": 300}
     },
 }

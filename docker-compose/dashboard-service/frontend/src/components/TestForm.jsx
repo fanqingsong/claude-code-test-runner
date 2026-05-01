@@ -6,6 +6,11 @@ import { createTest, updateTest } from '../api';
 function TestForm(props) {
   const { onTestCreated, editingTest, onCancel } = props;
 
+  const getAuthHeadersSafe = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,7 +32,7 @@ function TestForm(props) {
       const loadTestData = async () => {
         try {
           const stepsResponse = await fetch(`/api/v1/test-steps/test-definition/${editingTest.id}`, {
-            headers: authService.getAuthHeaders()
+            headers: getAuthHeadersSafe()
           });
           if (stepsResponse.ok) {
             const steps = await stepsResponse.json();

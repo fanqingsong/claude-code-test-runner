@@ -226,7 +226,9 @@ def check_overdue_schedules():
             )
 
             async with async_session_maker() as db:
-                now = datetime.now(timezone.utc)
+                # DB stores timestamps as naive datetime. Keep comparisons naive to avoid
+                # asyncpg errors mixing offset-aware and offset-naive datetimes.
+                now = datetime.utcnow()
 
                 # Find schedules with next_run_time in the past
                 result = await db.execute(

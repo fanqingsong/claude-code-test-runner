@@ -78,8 +78,11 @@ def execute_test(self, test_definition_id: int, run_id: str, environment: Dict[s
                 async with async_session_maker() as db:
                     from app.services.execution_service import ExecutionService
                     execution_service = ExecutionService(db)
-                    # Status is already set correctly by save_test_results, just update end_time if needed
-                    await execution_service.update_run_status(run_id, result.get("status", "failed"))
+                    # Map "error" status to "failed" for valid status transition
+                    final_status = result.get("status", "failed")
+                    if final_status == "error":
+                        final_status = "failed"
+                    await execution_service.update_run_status(run_id, final_status)
                     await async_engine.dispose()
 
             loop2 = asyncio.new_event_loop()

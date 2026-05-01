@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 
 # Casdoor SDK (optional import)
 try:
@@ -22,6 +23,10 @@ security = HTTPBearer()
 
 # Global Casdoor SDK instance
 _casdoor_sdk = None
+
+# JWT settings (same as test-case-service)
+SECRET_KEY = os.environ.get("SECRET_KEY", "your-secret-key")
+ALGORITHM = "HS256"
 
 
 def get_casdoor_sdk():
@@ -59,14 +64,37 @@ def get_casdoor_sdk():
     return _casdoor_sdk
 
 
+def decode_access_token(token: str) -> dict:
+    """
+    Decode and verify a JWT access token.
+
+    Args:
+        token: The JWT token to decode
+
+    Returns:
+        dict: The decoded token payload
+
+    Raises:
+        HTTPException: If token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 async def verify_token(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     """
     Verify a JWT token from Authorization header.
 
-    For scheduler service, we only verify tokens and extract user info.
-    The actual token validation is done by test-case-service.
+    Supports both local JWT tokens and Casdoor tokens.
 
     Args:
         credentials: HTTP Bearer credentials
@@ -76,23 +104,37 @@ async def verify_token(
     """
     token = credentials.credentials
 
-    # Try Casdoor token first
+    # Try local JWT first
+    try:
+        payload = decode_access_token(token)
+        # Add provider information
+        payload["provider"] = "local"
+        user_id = payload.get("sub")
+        if user_id:
+            return payload
+    except HTTPException:
+        pass  # Try Casdoor next
+    except Exception:
+        pass  # Try Casdoor next
+
+    # Try Casdoor token
     try:
         if CASDOOR_AVAILABLE:
             sdk = get_casdoor_sdk()
             payload = sdk.parse_jwt_token(token)
-            return {
+            # Normalize Casdoor payload to match local format
+            normalized_payload = {
                 "sub": payload.get("id"),
                 "username": payload.get("name"),
                 "email": payload.get("email"),
                 "provider": "casdoor",
                 "roles": payload.get("roles", [])
             }
+            return normalized_payload
     except Exception:
         pass
 
-    # If Casdoor failed, raise error
-    # (Scheduler service only accepts Casdoor tokens for now)
+    # If neither worked, raise error
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

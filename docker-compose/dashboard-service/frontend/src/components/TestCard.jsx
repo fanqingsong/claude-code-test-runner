@@ -7,6 +7,11 @@ function TestCard({ test, onRun, onViewDetails, onViewRunHistory, onEdit }) {
   const [steps, setSteps] = useState([]);
   const [loadingSteps, setLoadingSteps] = useState(false);
 
+  const getAuthHeadersSafe = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const getStatusColor = (test) => {
     // This would come from test_runs data, simplified for now
     return '#e8f5e9';
@@ -27,9 +32,9 @@ function TestCard({ test, onRun, onViewDetails, onViewRunHistory, onEdit }) {
     if (!showSteps && steps.length === 0) {
       setLoadingSteps(true);
       try {
-        const response = await fetch(`/api/v1/test-steps/test-definition/${test.id}`);
-,
-        headers: authService.getAuthHeaders()
+        const response = await fetch(`/api/v1/test-steps/test-definition/${test.id}`, {
+          headers: getAuthHeadersSafe()
+        });
         if (response.ok) {
           const stepsData = await response.json();
           setSteps(stepsData);

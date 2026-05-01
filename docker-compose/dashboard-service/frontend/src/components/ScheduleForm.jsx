@@ -7,6 +7,64 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const buildHttpErrorMessage = async (response, fallback) => {
+    const status = response?.status;
+    const statusText = response?.statusText || '';
+
+    let bodyText = '';
+    try {
+      bodyText = await response.text();
+    } catch {
+      bodyText = '';
+    }
+
+    let detail = '';
+    if (bodyText) {
+      try {
+        const json = JSON.parse(bodyText);
+        detail =
+          json?.detail ||
+          json?.error ||
+          json?.message ||
+          (typeof json === 'string' ? json : '') ||
+          bodyText;
+      } catch {
+        detail = bodyText;
+      }
+    }
+
+    const normalized = (detail || '').toString().trim();
+    const base = fallback || '请求失败';
+    const suffixParts = [
+      typeof status === 'number' ? `HTTP ${status}` : null,
+      statusText ? statusText : null,
+      normalized ? normalized : null,
+    ].filter(Boolean);
+
+    return suffixParts.length ? `${base}（${suffixParts.join(' - ')}）` : base;
+  };
+
+  const getSafeAuthHeaders = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return typeof authService?.getAuthHeaders === 'function' ? authService.getAuthHeaders() : {};
+  };
+
+  const ensureAuthOrRedirect = async () => {
+    if (!authService?.isAuthenticated?.()) {
+      window.location.hash = 'login';
+      throw new Error('未登录或登录已过期，请重新登录');
+    }
+    try {
+      await authService.ensureValidToken();
+    } catch {
+      window.location.hash = 'login';
+      throw new Error('登录已过期，请重新登录');
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     schedule_type: 'single',
@@ -45,10 +103,21 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
 
   const loadTests = async () => {
     try {
-      const response = await fetch('/api/v1/test-definitions/', {
-        headers: authService.getAuthHeaders()
+      await ensureAuthOrRedirect();
+      const response = await fetch(`${window.location.origin}/api/v1/test-definitions/`, {
+        headers: getSafeAuthHeaders()
       });
-      if (!response.ok) throw new Error('Failed to load tests');
+      if (response.status === 401) {
+        window.location.hash = 'login';
+        throw new Error('登录已过期，请重新登录');
+      }
+      if (!response.ok) {
+        const msg = await buildHttpErrorMessage(response, '加载测试用例失败');
+        if (response.status === 403) {
+          throw new Error(`${msg}\n（通常表示请求没带上 Authorization，或 token 验证失败/格式不正确）`);
+        }
+        throw new Error(msg);
+      }
       const data = await response.json();
       setTests(data.items || data);
     } catch (err) {
@@ -63,21 +132,32 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
     setSuccessMessage(null);
 
     try {
+      await ensureAuthOrRedirect();
       const url = editingSchedule
-        ? `/api/v1/schedules/${editingSchedule.id}`
-        : '/api/v1/schedules/';
+        ? `${window.location.origin}/api/v1/schedules/${editingSchedule.id}`
+        : `${window.location.origin}/api/v1/schedules/`;
 
       const method = editingSchedule ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getSafeAuthHeaders()
+        },
         body: JSON.stringify(formData)
       });
+      if (response.status === 401) {
+        window.location.hash = 'login';
+        throw new Error('登录已过期，请重新登录');
+      }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to save schedule');
+        const msg = await buildHttpErrorMessage(response, '保存调度失败');
+        if (response.status === 403) {
+          throw new Error(`${msg}\n（通常表示请求没带上 Authorization，或 token 验证失败/格式不正确）`);
+        }
+        throw new Error(msg);
       }
 
       // 通知父组件刷新列表并关闭modal

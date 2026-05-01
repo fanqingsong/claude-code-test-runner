@@ -14,6 +14,11 @@ function TestList({ tests, onRunTest, onEditTest }) {
   const [detailTest, setDetailTest] = useState(null);
   const [historyTest, setHistoryTest] = useState(null);
 
+  const getAuthHeadersSafe = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const filteredTests = tests.filter(test => {
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -40,12 +45,12 @@ function TestList({ tests, onRunTest, onEditTest }) {
 
       const requestData = { test_definition_ids: [numericTestId] };
 
-      const response = await fetch('/api/v1/jobs/', {
+      const response = await fetch(`${window.location.origin}/api/v1/jobs/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...authService.getAuthHeaders()
+          ...getAuthHeadersSafe()
         },
         mode: 'cors',
         body: JSON.stringify(requestData)

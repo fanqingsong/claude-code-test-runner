@@ -7,6 +7,11 @@ function TestDetailModal({ test, onClose, onViewRunHistory }) {
   const [testDetails, setTestDetails] = useState(null);
   const [error, setError] = useState(null);
 
+  const getAuthHeadersSafe = () => {
+    const token = typeof authService?.getAccessToken === 'function' ? authService.getAccessToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   useEffect(() => {
     fetchTestDetails();
   }, [test.id]);
@@ -16,7 +21,7 @@ function TestDetailModal({ test, onClose, onViewRunHistory }) {
     setError(null);
     try {
       const response = await fetch(`/api/v1/test-steps/test-definition/${test.id}`, {
-        headers: authService.getAuthHeaders()
+        headers: getAuthHeadersSafe()
       });
       if (!response.ok) {
         throw new Error('Failed to fetch test details');
