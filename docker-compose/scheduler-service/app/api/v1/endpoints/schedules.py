@@ -26,6 +26,7 @@ from app.schemas.schedules import (
     ScheduleTriggerResponse
 )
 from app.services import get_schedule_manager, get_execution_service
+from app.services.unified_auth import verify_token
 
 router = APIRouter()
 
@@ -79,6 +80,7 @@ SCHEDULE_PRESETS = [
 @router.post("/", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED)
 async def create_schedule(
     schedule_data: ScheduleCreate,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -129,6 +131,9 @@ async def create_schedule(
             detail=f"Invalid cron expression or timezone: {str(e)}"
         )
 
+    # Get user ID from token
+    user_id = int(current_user["sub"]) if current_user.get("provider") == "local" else None
+
     # Create schedule
     schedule = Schedule(
         name=schedule_data.name,
@@ -145,7 +150,7 @@ async def create_schedule(
         max_retries=schedule_data.max_retries,
         retry_interval_seconds=schedule_data.retry_interval_seconds,
         next_run_time=next_run_time,
-        created_by="system"  # TODO: Get from auth context
+        created_by=str(user_id) if user_id else "system"
     )
 
     db.add(schedule)
@@ -169,10 +174,13 @@ async def list_schedules(
     limit: int = Query(100, ge=1, le=1000, description="Number of schedules to return"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     schedule_type: Optional[str] = Query(None, description="Filter by schedule type"),
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
     List all schedules with optional filters.
+
+    Admin users see all schedules, regular users only see their own.
 
     - **skip**: Number of schedules to skip (for pagination)
     - **limit**: Number of schedules to return (max 1000)
@@ -180,6 +188,12 @@ async def list_schedules(
     - **schedule_type**: Filter by schedule type (single/suite/tag_filter)
     """
     query = select(Schedule)
+
+    # Apply role-based filtering
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        # Regular local users only see their own schedules
+        query = query.where(Schedule.created_by == str(current_user["sub"]))
 
     # Apply filters
     if is_active is not None:
@@ -237,6 +251,7 @@ async def list_schedule_presets():
 @router.get("/{schedule_id}", response_model=ScheduleResponse)
 async def get_schedule(
     schedule_id: int,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -254,6 +269,15 @@ async def get_schedule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Schedule with ID {schedule_id} not found"
         )
+
+    # Check permission: regular users can only view their own schedules
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if schedule.created_by != str(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this schedule"
+            )
 
     return schedule
 

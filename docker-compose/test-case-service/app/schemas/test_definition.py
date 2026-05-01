@@ -83,7 +83,7 @@ class TestDefinitionResponse(TestDefinitionBase):
     id: int
     created_at: datetime
     updated_at: datetime
-    created_by: str
+    created_by: int
     version: int
     is_active: bool
     test_steps: List[TestStepResponse] = []
@@ -108,6 +108,6 @@ class TestVersionSnapshot(BaseModel):
     snapshot: dict
     change_description: Optional[str]
     created_at: datetime
-    created_by: str
+    created_by: int
 
     model_config = {"from_attributes": True}

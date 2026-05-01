@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import authService from '../services/authService';
 import { createTest, updateTest } from '../api';
 // import StepEditor from './StepEditor';  // Temporarily disabled due to loading issue
 
@@ -25,7 +26,9 @@ function TestForm(props) {
     if (editingTest) {
       const loadTestData = async () => {
         try {
-          const stepsResponse = await fetch(`http://localhost:8011/api/v1/test-steps/test-definition/${editingTest.id}`);
+          const stepsResponse = await fetch(`/api/v1/test-steps/test-definition/${editingTest.id}`, {
+            headers: authService.getAuthHeaders()
+          });
           if (stepsResponse.ok) {
             const steps = await stepsResponse.json();
             const formattedSteps = steps.map(step => ({

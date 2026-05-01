@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models import TestStep, TestDefinition
 from app.schemas import TestStepCreate, TestStepResponse, TestStepUpdate
+from app.services.unified_auth import verify_token
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ router = APIRouter()
 @router.get("/test-definition/{test_definition_id}", response_model=List[TestStepResponse])
 async def list_test_steps(
     test_definition_id: int,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -40,6 +42,15 @@ async def list_test_steps(
             detail=f"Test definition with id {test_definition_id} not found"
         )
 
+    # Check permission: regular users can only view test steps for their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view test steps for this test definition"
+            )
+
     # Get test steps
     result = await db.execute(
         select(TestStep)
@@ -55,6 +66,7 @@ async def list_test_steps(
 async def create_test_step(
     test_definition_id: int,
     step: TestStepCreate,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -78,6 +90,15 @@ async def create_test_step(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Test definition with id {test_definition_id} not found"
         )
+
+    # Check permission: regular users can only add test steps to their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to add test steps to this test definition"
+            )
 
     # Check if step_number already exists
     existing = await db.execute(
@@ -113,6 +134,7 @@ async def create_test_step(
 async def update_test_step(
     step_id: int,
     step_update: TestStepUpdate,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -121,7 +143,11 @@ async def update_test_step(
     - **step_id**: Test step internal ID
     """
     # Get existing step
-    result = await db.execute(select(TestStep).where(TestStep.id == step_id))
+    result = await db.execute(
+        select(TestStep)
+        .join(TestDefinition, TestStep.test_definition_id == TestDefinition.id)
+        .where(TestStep.id == step_id)
+    )
     step = result.scalar_one_or_none()
 
     if not step:
@@ -129,6 +155,21 @@ async def update_test_step(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Test step with id {step_id} not found"
         )
+
+    # Get test definition for permission check
+    result = await db.execute(
+        select(TestDefinition).where(TestDefinition.id == step.test_definition_id)
+    )
+    test_def = result.scalar_one_or_none()
+
+    # Check permission: regular users can only update test steps for their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this test step"
+            )
 
     # Update fields
     update_data = step_update.model_dump(exclude_unset=True)
@@ -144,6 +185,7 @@ async def update_test_step(
 @router.delete("/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_test_step(
     step_id: int,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -152,7 +194,11 @@ async def delete_test_step(
     - **step_id**: Test step internal ID
     """
     # Get existing step
-    result = await db.execute(select(TestStep).where(TestStep.id == step_id))
+    result = await db.execute(
+        select(TestStep)
+        .join(TestDefinition, TestStep.test_definition_id == TestDefinition.id)
+        .where(TestStep.id == step_id)
+    )
     step = result.scalar_one_or_none()
 
     if not step:
@@ -160,6 +206,21 @@ async def delete_test_step(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Test step with id {step_id} not found"
         )
+
+    # Get test definition for permission check
+    result = await db.execute(
+        select(TestDefinition).where(TestDefinition.id == step.test_definition_id)
+    )
+    test_def = result.scalar_one_or_none()
+
+    # Check permission: regular users can only delete test steps for their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this test step"
+            )
 
     await db.delete(step)
     await db.commit()

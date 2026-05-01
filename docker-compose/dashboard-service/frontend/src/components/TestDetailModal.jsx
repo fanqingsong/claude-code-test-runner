@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import authService from '../services/authService';
 import { getJobStatus } from '../api';
 
 function TestDetailModal({ test, onClose, onViewRunHistory }) {
@@ -14,7 +15,9 @@ function TestDetailModal({ test, onClose, onViewRunHistory }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8011/api/v1/test-steps/test-definition/${test.id}`);
+      const response = await fetch(`/api/v1/test-steps/test-definition/${test.id}`, {
+        headers: authService.getAuthHeaders()
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch test details');
       }

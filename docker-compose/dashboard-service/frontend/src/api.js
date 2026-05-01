@@ -1,19 +1,28 @@
-// Use relative paths to avoid CORS issues
-// In production, these will be proxied through the dashboard service
-const TEST_API = window.location.hostname === 'localhost'
-  ? 'http://localhost:8011/api/v1'
-  : '/api/test-case';
+// API Base URLs
+// All requests go through Nginx reverse proxy on port 8080
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'
+  : '';
 
-const DASHBOARD_API = window.location.hostname === 'localhost'
-  ? 'http://localhost:8013/api'
-  : '/api';
+const TEST_API = `${BASE_URL}/api/v1`;
+const DASHBOARD_API = `${BASE_URL}/api`;
+const SCHEDULER_API = `${BASE_URL}/api/v1`;
 
-// For testing - hardcoded token (in production, this should be stored securely)
-const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc3Njk1NDQ1Nn0.6mD3nX5XS1_RIGXnPQ53Ud4zv951CJ9-0mHbOXznCMQ';
+// Import authService for authentication
+import authService from './services/authService';
 
-const getAuthHeaders = () => ({
-  'Authorization': `Bearer ${TOKEN}`
-});
+const getAuthHeaders = () => {
+  const token = authService.getAccessToken();
+  console.log('getAuthHeaders - token exists:', !!token);
+  console.log('getAuthHeaders - token preview:', token ? token.substring(0, 20) + '...' : 'no token');
+  if (!token) {
+    console.warn('getAuthHeaders - No token available, request may fail');
+    return {};
+  }
+  return {
+    'Authorization': `Bearer ${token}`
+  };
+};
 
 export const getTests = async () => {
   try {
@@ -234,8 +243,11 @@ export const getTestRunDetails = async (runId) => {
 // Get test job status
 export const getJobStatus = async (jobId) => {
   try {
-    const response = await fetch(`http://localhost:8012/api/v1/jobs/${jobId}`, {
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(`${SCHEDULER_API}/jobs/${jobId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       mode: 'cors'
     });
     if (!response.ok) {
@@ -251,8 +263,11 @@ export const getJobStatus = async (jobId) => {
 // Get all jobs
 export const getJobs = async () => {
   try {
-    const response = await fetch('http://localhost:8012/api/v1/jobs/', {
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(`${SCHEDULER_API}/jobs/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       mode: 'cors'
     });
     if (!response.ok) {

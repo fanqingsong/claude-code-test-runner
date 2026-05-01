@@ -5,13 +5,16 @@ Records the execution history of scheduled tests.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class TestRun(Base):
@@ -29,6 +32,10 @@ class TestRun(Base):
     # Foreign keys
     schedule_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     test_definition_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True  # Allow NULL for existing records
+    )
 
     # Run identification
     run_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
@@ -59,6 +66,13 @@ class TestRun(Base):
         nullable=False,
         default=datetime.utcnow,
         server_default=func.now()
+    )
+
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[user_id],
+        backref="test_runs"
     )
 
     def __repr__(self) -> str:

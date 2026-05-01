@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import authService from '../services/authService';
 
 function TestCard({ test, onRun, onViewDetails, onViewRunHistory, onEdit }) {
   const [isRunning, setIsRunning] = useState(false);
@@ -26,7 +27,9 @@ function TestCard({ test, onRun, onViewDetails, onViewRunHistory, onEdit }) {
     if (!showSteps && steps.length === 0) {
       setLoadingSteps(true);
       try {
-        const response = await fetch(`http://localhost:8011/api/v1/test-steps/test-definition/${test.id}`);
+        const response = await fetch(`/api/v1/test-steps/test-definition/${test.id}`);
+,
+        headers: authService.getAuthHeaders()
         if (response.ok) {
           const stepsData = await response.json();
           setSteps(stepsData);

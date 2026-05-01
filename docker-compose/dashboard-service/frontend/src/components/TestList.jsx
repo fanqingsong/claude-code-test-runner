@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import authService from '../services/authService';
 import TestRunModal from './TestRunModal';
 import TestDetailModal from './TestDetailModal';
 import RunHistoryModal from './RunHistoryModal';
 import './TestList.css';
 
 function TestList({ tests, onRunTest, onEditTest }) {
+  const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   const [runningJob, setRunningJob] = useState(null);
@@ -37,11 +40,12 @@ function TestList({ tests, onRunTest, onEditTest }) {
 
       const requestData = { test_definition_ids: [numericTestId] };
 
-      const response = await fetch('http://localhost:8012/api/v1/jobs/', {
+      const response = await fetch('/api/v1/jobs/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          ...authService.getAuthHeaders()
         },
         mode: 'cors',
         body: JSON.stringify(requestData)
@@ -84,6 +88,21 @@ function TestList({ tests, onRunTest, onEditTest }) {
   return (
     <div className="test-list">
       <h2 className="list-title">测试用例 ({tests.length})</h2>
+
+      {/* Role-based messaging */}
+      {isAdmin && (
+        <div style={{
+          fontSize: '13px',
+          color: '#666',
+          marginBottom: '16px',
+          padding: '8px 12px',
+          background: '#e3f2fd',
+          borderRadius: '4px',
+          borderLeft: '3px solid #2196f3'
+        }}>
+          👑 管理员模式 - 显示所有用户的测试用例
+        </div>
+      )}
 
       <div className="list-controls">
         <input

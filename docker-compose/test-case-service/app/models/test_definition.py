@@ -7,7 +7,7 @@ Represents a test case definition with metadata, steps, and versions.
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import ARRAY, Boolean, DateTime, Integer, String, Text, func
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.test_step import TestStep
     from app.models.test_version import TestVersion
+    from app.models.user import User
 
 
 class TestDefinition(Base):
@@ -55,7 +56,10 @@ class TestDefinition(Base):
         server_default=func.now(),
         onupdate=datetime.utcnow
     )
-    created_by: Mapped[str] = mapped_column(String(100), default="system", nullable=False)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True  # Allow NULL for existing records and system-created tests
+    )
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
@@ -71,6 +75,11 @@ class TestDefinition(Base):
         back_populates="test_definition",
         cascade="all, delete-orphan",
         order_by="TestVersion.version.desc()"
+    )
+    creator: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[created_by],
+        backref="test_definitions"
     )
 
     def __repr__(self) -> str:

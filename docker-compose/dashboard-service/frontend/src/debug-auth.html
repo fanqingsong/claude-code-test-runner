@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debug</title>
+</head>
+<body>
+    <h1>Auth Service Debug</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        import authService from './services/authService.js';
+
+        const results = document.getElementById('results');
+
+        results.innerHTML = `
+            <h2>Auth Service 检查结果:</h2>
+            <p>✅ authService 加载成功</p>
+            <p>✅ authService 类型: ${typeof authService}</p>
+            <p>✅ authService.getAuthHeaders 类型: ${typeof authService.getAuthHeaders}</p>
+            <p>✅ authService.getAuthHeaders 是否为函数: ${typeof authService.getAuthHeaders === 'function' ? '是' : '否'}</p>
+            <p>✅ Token 存在: ${!!authService.getAccessToken()}</p>
+            <p>✅ 用户已认证: ${authService.isAuthenticated()}</p>
+            <pre>authService 可用方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(authService)).filter(name => name !== 'constructor').join(', ')}</pre>
+        `;
+    </script>
+</body>
+</html>

@@ -5,12 +5,15 @@ Represents a test case execution result.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, DateTime, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class TestCase(Base):
@@ -37,6 +40,10 @@ class TestCase(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     test_definition_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True  # Allow NULL for existing records
+    )
     test_id: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -50,6 +57,13 @@ class TestCase(Base):
         nullable=False,
         default=datetime.utcnow,
         server_default=func.now()
+    )
+
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[user_id],
+        backref="test_cases"
     )
 
     def __repr__(self):

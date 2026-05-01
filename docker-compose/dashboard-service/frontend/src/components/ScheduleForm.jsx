@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import authService from '../services/authService';
 import './ScheduleForm.css';
 
 export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCancel }) {
@@ -44,7 +45,9 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
 
   const loadTests = async () => {
     try {
-      const response = await fetch('http://localhost:8011/api/v1/test-definitions/');
+      const response = await fetch('/api/v1/test-definitions/', {
+        headers: authService.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to load tests');
       const data = await response.json();
       setTests(data.items || data);
@@ -61,8 +64,8 @@ export default function ScheduleForm({ onScheduleCreated, editingSchedule, onCan
 
     try {
       const url = editingSchedule
-        ? `http://localhost:8012/api/v1/schedules/${editingSchedule.id}`
-        : 'http://localhost:8012/api/v1/schedules/';
+        ? `/api/v1/schedules/${editingSchedule.id}`
+        : '/api/v1/schedules/';
 
       const method = editingSchedule ? 'PUT' : 'POST';
 

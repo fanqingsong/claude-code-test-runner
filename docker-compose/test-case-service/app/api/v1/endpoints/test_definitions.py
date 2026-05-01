@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models import TestDefinition, TestStep, TestVersion
+from app.models import TestDefinition, TestStep, TestVersion, User
 from app.schemas import (
     TestDefinitionCreate,
     TestDefinitionResponse,
@@ -20,6 +20,7 @@ from app.schemas import (
     TestDefinitionListResponse,
     TestVersionSnapshot,
 )
+from app.services.unified_auth import verify_token
 
 router = APIRouter()
 
@@ -31,10 +32,13 @@ async def list_test_definitions(
     search: Optional[str] = Query(None, description="Search in name, description, or test_id"),
     tags: Optional[List[str]] = Query(None, description="Filter by tags"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
     List all test definitions with pagination and filtering.
+
+    Admin users see all test definitions, regular users only see their own.
 
     - **skip**: Number of items to skip (for pagination)
     - **limit**: Number of items to return (max 500)
@@ -44,6 +48,12 @@ async def list_test_definitions(
     """
     # Build query
     query = select(TestDefinition)
+
+    # Apply role-based filtering
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        # Regular local users only see their own test definitions
+        query = query.where(TestDefinition.created_by == int(current_user["sub"]))
 
     # Apply filters
     if search:
@@ -91,6 +101,7 @@ async def list_test_definitions(
 @router.post("/", response_model=TestDefinitionResponse, status_code=status.HTTP_201_CREATED)
 async def create_test_definition(
     test_def: TestDefinitionCreate,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -114,6 +125,9 @@ async def create_test_definition(
             detail=f"Test definition with test_id '{test_def.test_id}' already exists"
         )
 
+    # Get user ID from token
+    user_id = int(current_user["sub"]) if current_user.get("provider") == "local" else None
+
     # Create test definition
     db_test_def = TestDefinition(
         name=test_def.name,
@@ -122,7 +136,7 @@ async def create_test_definition(
         url=test_def.url,
         environment=test_def.environment,
         tags=test_def.tags,
-        created_by="system",  # TODO: Get from JWT token in Task 5
+        created_by=user_id,
     )
 
     # Add test steps
@@ -152,6 +166,7 @@ async def create_test_definition(
 @router.get("/{test_id}", response_model=TestDefinitionResponse)
 async def get_test_definition(
     test_id: str,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -172,6 +187,15 @@ async def get_test_definition(
             detail=f"Test definition with test_id '{test_id}' not found"
         )
 
+    # Check permission: regular users can only view their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this test definition"
+            )
+
     return test_def
 
 
@@ -179,6 +203,7 @@ async def get_test_definition(
 async def update_test_definition(
     test_id: str,
     test_def_update: TestDefinitionUpdate,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -208,6 +233,18 @@ async def update_test_definition(
             detail=f"Test definition with test_id '{test_id}' not found"
         )
 
+    # Check permission: regular users can only update their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this test definition"
+            )
+
+    # Get user ID for version tracking
+    user_id = int(current_user["sub"]) if current_user.get("provider") == "local" else None
+
     # Create version snapshot
     snapshot_data = TestDefinitionResponse.model_validate(test_def).model_dump()
     version = TestVersion(
@@ -215,7 +252,7 @@ async def update_test_definition(
         version=test_def.version,
         snapshot=snapshot_data,
         change_description="Update before modification",
-        created_by="system"  # TODO: Get from JWT token in Task 5
+        created_by=user_id
     )
     db.add(version)
 
@@ -242,6 +279,7 @@ async def update_test_definition(
 @router.delete("/{test_id}", response_model=TestDefinitionResponse)
 async def delete_test_definition(
     test_id: str,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -263,6 +301,15 @@ async def delete_test_definition(
             detail=f"Test definition with test_id '{test_id}' not found"
         )
 
+    # Check permission: regular users can only delete their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this test definition"
+            )
+
     # Soft delete
     test_def.is_active = False
     await db.commit()
@@ -274,6 +321,7 @@ async def delete_test_definition(
 @router.get("/{test_id}/versions", response_model=List[TestVersionSnapshot])
 async def list_test_definition_versions(
     test_id: str,
+    current_user: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -292,6 +340,15 @@ async def list_test_definition_versions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Test definition with test_id '{test_id}' not found"
         )
+
+    # Check permission: regular users can only view versions of their own test definitions
+    is_admin = current_user.get("is_admin", False)
+    if not is_admin and current_user.get("provider") == "local":
+        if test_def.created_by != int(current_user["sub"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view versions of this test definition"
+            )
 
     # Get versions
     result = await db.execute(

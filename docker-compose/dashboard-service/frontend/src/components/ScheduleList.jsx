@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import authService from '../services/authService';
 import './ScheduleList.css';
 
 export default function ScheduleList({ refreshKey, onEditSchedule, onTriggerSchedule, onToggleSchedule }) {
@@ -10,7 +11,9 @@ export default function ScheduleList({ refreshKey, onEditSchedule, onTriggerSche
   const loadSchedules = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8012/api/v1/schedules/');
+      const response = await fetch('/api/v1/schedules/', {
+        headers: authService.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to load schedules');
       const data = await response.json();
       setSchedules(data.items || data);
@@ -35,8 +38,9 @@ export default function ScheduleList({ refreshKey, onEditSchedule, onTriggerSche
 
     setDeletingId(id);
     try {
-      const response = await fetch(`http://localhost:8012/api/v1/schedules/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/v1/schedules/${id}`, {
+        method: 'DELETE',
+        headers: authService.getAuthHeaders()
       });
       if (!response.ok) throw new Error('Failed to delete schedule');
       loadSchedules();

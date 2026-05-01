@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDashboardData, getTestRuns } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import StatsCards from './StatsCards';
 // import ChartsSection from './ChartsSection';  // Temporarily disabled due to loading issues
 import RecentTests from './RecentTests';
@@ -60,6 +61,7 @@ const generateMockTestRuns = () => {
 };
 
 function DashboardView() {
+  const { user, isAdmin } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     summary: {},
     byDay: [],
@@ -156,11 +158,24 @@ function DashboardView() {
       <h1 style={{
         fontSize: '28px',
         fontWeight: 'bold',
-        marginBottom: '24px',
+        marginBottom: '8px',
         color: '#333'
       }}>
         测试仪表板
       </h1>
+
+      {/* Role-based messaging */}
+      <div style={{
+        fontSize: '14px',
+        color: '#666',
+        marginBottom: '24px',
+        padding: '12px 16px',
+        background: isAdmin ? '#e3f2fd' : '#f5f5f5',
+        borderRadius: '4px',
+        borderLeft: `4px solid ${isAdmin ? '#2196f3' : '#9e9e9e'}`
+      }}>
+        {isAdmin ? '👑 管理员视图 - 查看所有用户的测试数据' : '👤 个人视图 - 仅显示您创建的测试数据'}
+      </div>
 
       {/* 统计卡片 */}
       <StatsCards stats={dashboardData.summary || {}} totalDefinitions={dashboardData.totalDefinitions || 0} />

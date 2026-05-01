@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { getTests } from './api';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './components/LoginPage';
+import OidcCallback from './components/OidcCallback';
 import TestList from './components/TestList';
 import TestForm from './components/TestForm';
 import DashboardView from './components/DashboardView';
 import ScheduleList from './components/ScheduleList';
 import ScheduleForm from './components/ScheduleForm';
 import Modal from './components/Modal';
+import authService from './services/authService';
 
-function App() {
+function AppContent() {
+  const { user, logout, isAuthenticated } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,12 +27,19 @@ function App() {
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
   const loadTests = async () => {
+    // 只在用户已认证时才加载测试
+    if (!isAuthenticated) {
+      console.log('loadTests - User not authenticated, skipping');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const data = await getTests();
       setTests(data.items || data);
     } catch (err) {
+      console.error('loadTests error:', err);
       setError('Failed to load tests: ' + err.message);
     } finally {
       setLoading(false);
@@ -55,8 +68,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadTests();
-  }, []);
+    if (isAuthenticated) {
+      loadTests();
+    }
+  }, [isAuthenticated]);
 
   const handleTestCreated = () => {
     loadTests();
@@ -66,9 +81,12 @@ function App() {
 
   const handleTestRun = async (testId) => {
     try {
-      const response = await fetch('http://localhost:8012/api/v1/jobs/', {
+      const response = await fetch('/api/v1/jobs/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authService.getAuthHeaders()
+        },
         body: JSON.stringify({ test_definition_ids: [testId] })
       });
       if (response.ok) {
@@ -105,8 +123,11 @@ function App() {
 
   const handleTriggerSchedule = async (scheduleId) => {
     try {
-      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}/trigger`, {
-        method: 'POST'
+      const response = await fetch(`/api/v1/schedules/${scheduleId}/trigger`, {
+        method: 'POST',
+        headers: {
+          ...authService.getAuthHeaders()
+        }
       });
       if (response.ok) {
         alert('调度已触发！');
@@ -120,14 +141,19 @@ function App() {
 
   const handleToggleSchedule = async (scheduleId, isActive) => {
     try {
-      const response = await fetch(`http://localhost:8012/api/v1/schedules/${scheduleId}/toggle`, {
+      const response = await fetch(`/api/v1/schedules/${scheduleId}/toggle`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authService.getAuthHeaders()
+        },
         body: JSON.stringify({ is_active: isActive })
       });
-      if (!response.ok) throw new Error('Failed to toggle schedule');
-      // Refresh the schedule list
-      handleScheduleCreated();
+      if (response.ok) {
+        handleScheduleCreated();
+      } else {
+        throw new Error('Failed to toggle schedule');
+      }
     } catch (err) {
       alert('错误: ' + err.message);
     }
@@ -138,7 +164,8 @@ function App() {
     background: 'var(--cds-background-inverse)',
     padding: 'var(--cds-nav-padding)',
     height: 'var(--cds-nav-height)',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'space-between'
   };
 
   const navButtonStyle = (isActive) => ({
@@ -156,28 +183,65 @@ function App() {
     alignItems: 'center'
   });
 
+  // Check if user is on login page or OIDC callback
+  const isAuthPage = window.location.hash === '#login' || window.location.hash.startsWith('#/oidc/callback');
+
+  if (!isAuthenticated && !isAuthPage) {
+    // Redirect to login
+    window.location.hash = 'login';
+    return null;
+  }
+
+  if (isAuthPage) {
+    if (window.location.hash.startsWith('#/oidc/callback')) {
+      return <OidcCallback />;
+    }
+    return <LoginPage />;
+  }
+
   return (
     <div style={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
       {/* 导航栏 */}
       <nav style={navStyle}>
-        <button
-          onClick={() => window.location.hash = 'dashboard'}
-          style={navButtonStyle(currentView === 'dashboard')}
-        >
-          仪表板
-        </button>
-        <button
-          onClick={() => window.location.hash = 'tests'}
-          style={navButtonStyle(currentView === 'tests')}
-        >
-          测试管理
-        </button>
-        <button
-          onClick={() => window.location.hash = 'schedules'}
-          style={navButtonStyle(currentView === 'schedules')}
-        >
-          调度配置
-        </button>
+        <div style={{display: 'flex'}}>
+          <button
+            onClick={() => window.location.hash = 'dashboard'}
+            style={navButtonStyle(currentView === 'dashboard')}
+          >
+            仪表板
+          </button>
+          <button
+            onClick={() => window.location.hash = 'tests'}
+            style={navButtonStyle(currentView === 'tests')}
+          >
+            测试管理
+          </button>
+          <button
+            onClick={() => window.location.hash = 'schedules'}
+            style={navButtonStyle(currentView === 'schedules')}
+          >
+            调度配置
+          </button>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+          <span style={{color: 'var(--cds-text-on-color)', fontSize: '14px'}}>
+            {user?.username || user?.email}
+          </span>
+          <button
+            onClick={logout}
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(255,255,255,0.1)',
+              color: 'var(--cds-text-on-color)',
+              border: '1px solid var(--cds-border-subtle)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            退出登录
+          </button>
+        </div>
       </nav>
 
       {/* 内容区域 */}
@@ -318,6 +382,15 @@ function App() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrap app with AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

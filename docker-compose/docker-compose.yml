@@ -198,6 +198,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PORT: 8003
+      # Casdoor configuration
+      CASDOOR_ENDPOINT: http://casdoor:8000
+      CASDOOR_CLIENT_ID: ${CASDOOR_CLIENT_ID}
+      CASDOOR_CLIENT_SECRET: ${CASDOOR_CLIENT_SECRET}
+      CASDOOR_ORGANIZATION: ${CASDOOR_ORGANIZATION}
+      CASDOOR_APPLICATION: ${CASDOOR_APPLICATION}
+      CASDOOR_CERTIFICATE: ${CASDOOR_CERTIFICATE}
     ports:
       - "8013:8003"
       - "5173:5173"  # Vite dev server port for development
@@ -207,9 +214,49 @@ services:
       # Mount frontend source for hot reload in development
       - ./dashboard-service/frontend/src:/app/frontend/src
       - ./dashboard-service/frontend/public:/app/frontend/public:ro
-    command: ["sh", "-c", "cd /app/frontend && npm run dev -- --host 0.0.0.0 & cd /app && node src/server.js"]
+      - ./dashboard-service/frontend/vite.config.js:/app/frontend/vite.config.js:ro
+      - ./dashboard-service/frontend/index.html:/app/frontend/index.html:ro
+      - ./dashboard-service/frontend/package.json:/app/frontend/package.json:ro
+    command: ["sh", "-c", "cd /app/frontend && NODE_OPTIONS='--max-old-space-size=2048' npm run dev -- --host 0.0.0.0 & cd /app && NODE_OPTIONS='--max-old-space-size=512' node src/server.js"]
     depends_on:
       postgres:
+        condition: service_healthy
+      casdoor:
+        condition: service_started
+    networks:
+      - test-network
+    restart: unless-stopped
+
+  casdoor-postgres:
+    image: postgres:13-alpine
+    container_name: cc-test-casdoor-postgres
+    environment:
+      POSTGRES_DB: casdoor
+      POSTGRES_USER: casdoor
+      POSTGRES_PASSWORD: ${CASDOOR_POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - casdoor_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casdoor -d casdoor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+    restart: unless-stopped
+
+  casdoor:
+    image: casbin/casdoor:latest
+    container_name: cc-test-casdoor
+    environment:
+      RUNNING_IN_DOCKER: "true"
+      DRIVER: "postgres"
+      SQL_CONNECTION_STRING: "postgres://casdoor:${CASDOOR_POSTGRES_PASSWORD}@casdoor-postgres:5432/casdoor?sslmode=disable"
+    ports:
+      - "8002:8000"
+    depends_on:
+      casdoor-postgres:
         condition: service_healthy
     networks:
       - test-network
@@ -218,6 +265,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  casdoor_postgres_data:
 
 networks:
   test-network:
