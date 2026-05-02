@@ -48,8 +48,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - test-case-service
-      - scheduler-service
+      - unified-backend-service
       - dashboard-service
     networks:
       - test-network
@@ -60,38 +59,11 @@ services:
       timeout: 5s
       retries: 3
 
-  test-case-service:
+  unified-backend-service:
     build:
-      context: ./test-case-service
+      context: ./unified-backend-service
       dockerfile: Dockerfile
-    container_name: cc-test-case-service
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000","http://localhost:8013","http://localhost:5173"]'
-    ports:
-      - "8011:8001"
-    volumes:
-      # Mount source for hot reload in development
-      - ./test-case-service/app:/app/app
-    command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - test-network
-    restart: unless-stopped
-
-  scheduler-service:
-    build:
-      context: ./scheduler-service
-      dockerfile: Dockerfile
-    container_name: cc-test-scheduler-service
+    container_name: cc-test-unified-backend
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
@@ -103,17 +75,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000","http://localhost:8013","http://localhost:5173"]'
     ports:
-      - "8012:8002"
+      - "8011:8001"
     volumes:
       # Mount source for hot reload in development
-      - ./scheduler-service/app:/app/app
-    command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload"]
+      - ./unified-backend-service/app:/app/app
+    command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -123,11 +94,11 @@ services:
       - test-network
     restart: unless-stopped
 
-  scheduler-worker:
+  celery-worker:
     build:
-      context: ./scheduler-service
+      context: ./unified-backend-service
       dockerfile: Dockerfile
-    container_name: cc-test-scheduler-worker
+    container_name: cc-test-celery-worker
     command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2 -Q test_execution,schedule_sync
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -140,13 +111,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
     volumes:
       # Mount source for hot reload in development
-      - ./scheduler-service/app:/app/app
+      - ./unified-backend-service/app:/app/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,11 +126,11 @@ services:
       - test-network
     restart: unless-stopped
 
-  scheduler-beat:
+  celery-beat:
     build:
-      context: ./scheduler-service
+      context: ./unified-backend-service
       dockerfile: Dockerfile
-    container_name: cc-test-scheduler-beat
+    container_name: cc-test-celery-beat
     command: celery -A app.core.celery_app beat --loglevel=info
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -173,13 +143,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
     volumes:
       # Mount source for hot reload in development
-      - ./scheduler-service/app:/app/app
+      - ./unified-backend-service/app:/app/app
     depends_on:
       postgres:
         condition: service_healthy
