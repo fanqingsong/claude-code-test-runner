@@ -35,8 +35,8 @@ const UserForm = ({ user = null, onSuccess, onCancel }) => {
     try {
       const token = localStorage.getItem('token');
       const url = user
-        ? `http://localhost:8013/api/users/${user.id}`
-        : 'http://localhost:8013/api/users';
+        ? `/api/v1/users/${user.id}`
+        : '/api/v1/users';
       const method = user ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
