@@ -1,0 +1,67 @@
+"""
+Celery Application Configuration for Unified Backend Service
+
+Configures Celery for distributed task queue with Redis broker.
+"""
+
+from celery import Celery
+
+from app.core.config import settings
+
+# Create Celery application
+celery_app = Celery(
+    "unified_backend",
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_RESULT_BACKEND,
+    include=["app.tasks.test_execution", "app.tasks.schedule_sync"]
+)
+
+# Configure Celery
+celery_app.conf.update(
+    # Task settings
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
+    enable_utc=True,
+
+    # Task routing
+    task_routes={
+        "app.tasks.test_execution.execute_test": {"queue": "test_execution"},
+        "app.tasks.schedule_sync.*": {"queue": "schedule_sync"},
+    },
+
+    # Worker settings
+    worker_prefetch_multiplier=1,
+    worker_concurrency=2,
+
+    # Task result settings
+    result_expires=3600,  # 1 hour
+    task_track_started=True,
+
+    # Retry settings
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
+)
+
+# Configure periodic tasks for Celery Beat
+from celery.schedules import crontab
+
+# Maintenance tasks only - user schedules are synced dynamically
+celery_app.conf.beat_schedule = {
+    # Sync schedules to Celery Beat every 5 minutes
+    "sync-schedules-to-beat": {
+        "task": "app.tasks.schedule_sync.sync_schedules_to_beat",
+        "schedule": crontab(minute='*/5'),
+    },
+    # Check for overdue schedules every minute
+    "check-overdue-schedules": {
+        "task": "app.tasks.schedule_sync.check_overdue_schedules",
+        "schedule": crontab(minute='*'),
+    },
+    # Clean up old test runs daily at 2 AM
+    "cleanup-old-test-runs": {
+        "task": "app.tasks.schedule_sync.cleanup_old_test_runs",
+        "schedule": crontab(hour=2, minute=0),
+    },
+}
