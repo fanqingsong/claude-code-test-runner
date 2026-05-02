@@ -11,8 +11,12 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.user import User
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -96,16 +100,18 @@ def decode_access_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> dict:
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
     """
     Get the current authenticated user from JWT token.
 
     Args:
         credentials: HTTP Bearer credentials
+        db: Database session
 
     Returns:
-        dict: User information from token
+        User: Authenticated user model
 
     Raises:
         HTTPException: If token is invalid or expired
@@ -113,7 +119,7 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_access_token(token)
 
-    # Extract user information from token
+    # Extract user ID from token
     user_id: str = payload.get("sub")
     if user_id is None:
         raise HTTPException(
@@ -122,18 +128,49 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Return user information
-    return {
-        "user_id": user_id,
-        "username": payload.get("username"),
-        "email": payload.get("email"),
-    }
+    # Fetch user from database
+    result = await db.execute(select(User).where(User.id == int(user_id)))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
+
+
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Get the current authenticated user and verify they are an admin.
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User: Admin user
+
+    Raises:
+        HTTPException: If user is not an admin
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+
+    return current_user
 
 
 # Optional authentication dependency (allows anonymous access)
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
-) -> Optional[dict]:
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
     """
     Get the current authenticated user from JWT token (optional).
 
@@ -141,14 +178,15 @@ async def get_current_user_optional(
 
     Args:
         credentials: Optional HTTP Bearer credentials
+        db: Database session
 
     Returns:
-        Optional[dict]: User information from token, or None if not authenticated
+        Optional[User]: User model, or None if not authenticated
     """
     if credentials is None:
         return None
 
     try:
-        return await get_current_user(credentials)
+        return await get_current_user(credentials, db)
     except HTTPException:
         return None
