@@ -5,12 +5,15 @@ Represents users for authentication and authorization.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, Boolean, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.role import Role
 
 
 class User(Base):
@@ -47,5 +50,23 @@ class User(Base):
         onupdate=datetime.utcnow
     )
 
+    # Relationships
+    roles: Mapped[list["Role"]] = relationship(
+        "Role",
+        secondary="user_roles",
+        back_populates="users",
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
+    def has_role(self, role_name: str) -> bool:
+        """Check if user has a specific role."""
+        return any(r.name == role_name for r in self.roles)
+
+    def has_permission(self, permission_name: str) -> bool:
+        """Check if user has a specific permission through any of their roles."""
+        for role in self.roles:
+            if role.has_permission(permission_name):
+                return True
+        return False
