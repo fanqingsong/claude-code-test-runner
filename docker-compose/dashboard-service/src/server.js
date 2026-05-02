@@ -192,6 +192,50 @@ export class DashboardService {
       }
     });
 
+    // Proxy user management requests to test-case-service
+    this.app.proxyUserManagement = async (req, res) => {
+      try {
+        const user = await this.verifyToken(req);
+
+        if (!user) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const userId = parseInt(user.sub);
+        const isAdmin = this.isAdmin(user);
+
+        if (!isAdmin) {
+          return res.status(403).json({ error: 'Admin privileges required' });
+        }
+
+        // Forward request to test-case-service
+        const targetUrl = `http://test-case-service:8001/api/v1/users${req.url.substring('/api/users'.length)}`;
+        const response = await fetch(targetUrl, {
+          method: req.method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.authorization
+          },
+          body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
+        });
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+      } catch (error) {
+        console.error('Error proxying user management request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    };
+
+    // User management endpoints
+    this.app.get('/api/users', this.app.proxyUserManagement);
+    this.app.get('/api/users/:id', this.app.proxyUserManagement);
+    this.app.post('/api/users', this.app.proxyUserManagement);
+    this.app.put('/api/users/:id', this.app.proxyUserManagement);
+    this.app.delete('/api/users/:id', this.app.proxyUserManagement);
+    this.app.post('/api/users/:id/roles', this.app.proxyUserManagement);
+    this.app.delete('/api/users/:id/roles/:roleId', this.app.proxyUserManagement);
+
     // Serve the dashboard HTML
     this.app.get('/', async (req, res) => {
       try {

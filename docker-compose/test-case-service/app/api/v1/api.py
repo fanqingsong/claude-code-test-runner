@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     test_definitions,
     test_steps,
     test_versions,
+    users,
 )
 
 api_router = APIRouter()
@@ -38,4 +39,10 @@ api_router.include_router(
     test_versions.router,
     prefix="/test-versions",
     tags=["test-versions"]
+)
+
+api_router.include_router(
+    users.router,
+    prefix="/users",
+    tags=["users"]
 )
