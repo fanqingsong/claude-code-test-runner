@@ -9,11 +9,13 @@ import TestForm from './components/TestForm';
 import DashboardView from './components/DashboardView';
 import ScheduleList from './components/ScheduleList';
 import ScheduleForm from './components/ScheduleForm';
+import UserList from './components/UserList';
+import UserForm from './components/UserForm';
 import Modal from './components/Modal';
 import authService from './services/authService';
 
 function AppContent() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,11 @@ function AppContent() {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+
+  // User management states
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userRefreshKey, setUserRefreshKey] = useState(0);
 
   const loadTests = async () => {
     // 只在用户已认证时才加载测试
@@ -49,7 +56,7 @@ function AppContent() {
   // 从hash初始化视图
   useEffect(() => {
     const hash = window.location.hash.slice(1); // 去掉#号
-    if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules') {
+    if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users') {
       setCurrentView(hash);
     }
   }, []);
@@ -58,7 +65,7 @@ function AppContent() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules') {
+      if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users') {
         setCurrentView(hash);
       }
     };
@@ -263,6 +270,14 @@ function AppContent() {
           >
             调度配置
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => window.location.hash = 'users'}
+              style={navButtonStyle(currentView === 'users')}
+            >
+              用户管理
+            </button>
+          )}
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
           <span style={{color: 'var(--cds-text-on-color)', fontSize: '14px'}}>
@@ -289,6 +304,65 @@ function AppContent() {
       <div>
         {currentView === 'dashboard' ? (
           <DashboardView />
+        ) : currentView === 'users' ? (
+          <div style={{padding: 'var(--cds-layout-sm)'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--cds-layout-md)'}}>
+              <h2 style={{
+                margin: 0,
+                fontSize: 'var(--cds-heading-01)',
+                fontWeight: 'var(--cds-font-weight-light)',
+                lineHeight: 'var(--cds-display-line-height)'
+              }}>用户管理</h2>
+              <button
+                onClick={() => {
+                  setEditingUser(null);
+                  setShowUserForm(true);
+                }}
+                style={{
+                  padding: 'var(--cds-button-padding-sm)',
+                  background: 'var(--cds-button-primary)',
+                  color: 'var(--cds-text-on-color)',
+                  border: 'none',
+                  borderRadius: 'var(--cds-border-radius)',
+                  cursor: 'pointer',
+                  fontWeight: 'var(--cds-font-weight-regular)',
+                  fontSize: 'var(--cds-body-short-01)',
+                  height: 'var(--cds-button-height-compact)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--cds-spacing-sm)'
+                }}
+              >
+                <span>+</span>
+                <span>创建用户</span>
+              </button>
+            </div>
+
+            <UserList refreshKey={userRefreshKey} />
+
+            {/* 创建/编辑用户 Modal */}
+            <Modal
+              isOpen={showUserForm}
+              onClose={() => {
+                setEditingUser(null);
+                setShowUserForm(false);
+              }}
+              title={editingUser ? `编辑用户: ${editingUser.username}` : '创建新用户'}
+            >
+              <UserForm
+                user={editingUser}
+                onSuccess={() => {
+                  setUserRefreshKey(prev => prev + 1);
+                  setShowUserForm(false);
+                  setEditingUser(null);
+                }}
+                onCancel={() => {
+                  setShowUserForm(false);
+                  setEditingUser(null);
+                }}
+              />
+            </Modal>
+          </div>
         ) : currentView === 'schedules' ? (
           <div style={{padding: 'var(--cds-layout-sm)'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--cds-layout-md)'}}>
