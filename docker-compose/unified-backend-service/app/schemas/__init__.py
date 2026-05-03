@@ -17,6 +17,15 @@ from app.schemas.auth import (
     UserLogin,
     UserResponse,
 )
+from app.schemas.schedules import (
+    ScheduleCreate,
+    ScheduleUpdate,
+    ScheduleResponse,
+    ScheduleToggle,
+    SchedulePreset,
+    SchedulePresetsResponse,
+    ScheduleTriggerResponse,
+)
 
 __all__ = [
     "TestDefinitionCreate",
@@ -32,4 +41,11 @@ __all__ = [
     "UserCreate",
     "UserLogin",
     "UserResponse",
+    "ScheduleCreate",
+    "ScheduleUpdate",
+    "ScheduleResponse",
+    "ScheduleToggle",
+    "SchedulePreset",
+    "SchedulePresetsResponse",
+    "ScheduleTriggerResponse",
 ]

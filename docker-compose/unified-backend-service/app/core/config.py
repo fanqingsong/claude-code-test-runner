@@ -62,6 +62,36 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",")]
         return v
 
+    # Redis
+    REDIS_URL: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis URL for caching and Celery"
+    )
+
+    # Celery
+    CELERY_BROKER_URL: str = Field(
+        default="redis://localhost:6379/0",
+        description="Celery broker URL"
+    )
+    CELERY_RESULT_BACKEND: str = Field(
+        default="redis://localhost:6379/0",
+        description="Celery result backend URL"
+    )
+
+    # Anthropic API
+    ANTHROPIC_API_KEY: str = Field(
+        default="",
+        description="Anthropic API key for Claude"
+    )
+    ANTHROPIC_BASE_URL: str = Field(
+        default="https://api.anthropic.com",
+        description="Anthropic API base URL"
+    )
+    API_TIMEOUT_MS: int = Field(
+        default=300000,
+        description="API timeout in milliseconds"
+    )
+
 
 # Global settings instance
 settings = Settings()

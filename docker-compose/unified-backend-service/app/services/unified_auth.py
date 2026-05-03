@@ -1,5 +1,5 @@
 """
-Unified Authentication Service for Scheduler Service
+Unified Authentication Service
 
 Supports both local JWT authentication and Casdoor SSO authentication.
 """
@@ -9,7 +9,11 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy import select
+
+from app.core.config import settings
+from app.core.security import decode_access_token
 
 # Casdoor SDK (optional import)
 try:
@@ -18,15 +22,14 @@ try:
 except ImportError:
     CASDOOR_AVAILABLE = False
 
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # HTTP Bearer token scheme
 security = HTTPBearer()
 
 # Global Casdoor SDK instance
 _casdoor_sdk = None
-
-# JWT settings (same as test-case-service)
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-secret-key")
-ALGORITHM = "HS256"
 
 
 def get_casdoor_sdk():
@@ -62,30 +65,6 @@ def get_casdoor_sdk():
         )
 
     return _casdoor_sdk
-
-
-def decode_access_token(token: str) -> dict:
-    """
-    Decode and verify a JWT access token.
-
-    Args:
-        token: The JWT token to decode
-
-    Returns:
-        dict: The decoded token payload
-
-    Raises:
-        HTTPException: If token is invalid or expired
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 async def verify_token(
@@ -169,3 +148,130 @@ async def verify_permission(required_roles: list = None):
         return user
 
     return dependency
+
+
+async def authenticate_user_local(username: str, password: str) -> Optional[dict]:
+    """
+    Authenticate a user with local username and password.
+
+    Args:
+        username: The username
+        password: The password
+
+    Returns:
+        Token response if successful, None otherwise
+    """
+    from app.core.security import verify_password, create_access_token
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from app.core.database import get_db
+    from app.models.user import User
+
+    try:
+        async for db in get_db():
+            # Query user from database
+            result = await db.execute(
+                select(User).where(User.username == username)
+            )
+            user = result.scalar_one_or_none()
+
+            if not user or not user.is_active:
+                return None
+
+            if not verify_password(password, user.hashed_password):
+                return None
+
+            # Create access token
+            token_data = {
+                "sub": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "is_admin": user.is_admin
+            }
+            access_token = create_access_token(data=token_data)
+
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "provider": "local",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_admin": user.is_admin
+                }
+            }
+    except Exception as e:
+        # Import failed, return None
+        return None
+
+
+async def authenticate_user_casdoor(username: str, password: str) -> Optional[dict]:
+    """
+    Authenticate a user with Casdoor username and password.
+
+    Args:
+        username: The username
+        password: The password
+
+    Returns:
+        Token response if successful, None otherwise
+    """
+    if not CASDOOR_AVAILABLE:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Casdoor SDK not installed"
+        )
+
+    try:
+        sdk = get_casdoor_sdk()
+        token_response = sdk.get_oauth_token(
+            code="",
+            username=username,
+            password=password,
+            grant_type="password"
+        )
+
+        # Get user info
+        user_info = sdk.get_user(token_response["access_token"])
+
+        return {
+            "access_token": token_response.get("access_token"),
+            "refresh_token": token_response.get("refresh_token"),
+            "token_type": "bearer",
+            "provider": "casdoor",
+            "user": {
+                "id": user_info.get("id"),
+                "username": user_info.get("name"),
+                "email": user_info.get("email"),
+                "roles": user_info.get("roles", [])
+            }
+        }
+    except Exception as e:
+        return None
+
+
+async def refresh_token(refresh_token: str, provider: str) -> Optional[dict]:
+    """
+    Refresh an access token using a refresh token.
+
+    Args:
+        refresh_token: The refresh token
+        provider: The auth provider ("local" or "casdoor")
+
+    Returns:
+        New token response if successful, None otherwise
+    """
+    if provider == "casdoor" and CASDOOR_AVAILABLE:
+        try:
+            sdk = get_casdoor_sdk()
+            new_tokens = sdk.refresh_token_request(
+                refresh_token=refresh_token,
+                scope=""
+            )
+            return new_tokens
+        except Exception:
+            return None
+
+    # Local tokens don't support refresh in current implementation
+    return None
+
