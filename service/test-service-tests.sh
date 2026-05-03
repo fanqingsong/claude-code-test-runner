@@ -17,7 +17,7 @@ NC='\033[0m'
 
 # Test Case Service Tests
 echo "Testing Test Case Service..."
-cd docker-compose/test-case-service
+cd service/test-case-service
 if pytest tests/ -v; then
     echo -e "${GREEN}✓ Test Case Service tests passed${NC}"
 else
@@ -29,7 +29,7 @@ echo ""
 
 # Scheduler Service Tests
 echo "Testing Scheduler Service..."
-cd docker-compose/scheduler-service
+cd service/scheduler-service
 if pytest tests/ -v 2>/dev/null || true; then
     echo -e "${GREEN}✓ Scheduler Service tests passed${NC}"
 else
@@ -40,7 +40,7 @@ echo ""
 
 # Dashboard Service Tests (if any)
 echo "Testing Dashboard Service..."
-cd docker-compose/dashboard-service
+cd service/dashboard-service
 if npm test 2>/dev/null || true; then
     echo -e "${GREEN}✓ Dashboard Service tests passed${NC}"
 else

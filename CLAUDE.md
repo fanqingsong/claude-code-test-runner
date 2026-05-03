@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Claude Code Test Runner is an AI-powered E2E testing framework with two deployment models:
 
 1. **CLI Tool** (`cli/`): Standalone test runner using Claude Code SDK + Playwright
-2. **Microservices** (`docker-compose/`): Multi-service architecture with PostgreSQL, Redis, and web dashboard
+2. **Microservices** (`service/`): Multi-service architecture with PostgreSQL, Redis, and web dashboard
 
 The system executes natural language test definitions using Claude Code's AI to perform browser automation through Playwright MCP.
 
@@ -72,7 +72,7 @@ Changes to these directories are automatically reflected without rebuilding.
 
 **Dashboard Service:**
 ```bash
-cd docker-compose/dashboard-service
+cd service/dashboard-service
 npm run dev                    # Backend hot-reload
 npm run frontend:dev           # Frontend dev server
 npm run dev:full               # Both backend and frontend
@@ -236,7 +236,7 @@ The existing UI components were built using Material Design patterns and need to
 ## Configuration Files
 
 **CLI:** `cli/cc-test.yaml` (YAML configuration with environment detection)
-**Microservices:** `docker-compose/.env` (PostgreSQL, Redis, API keys)
+**Microservices:** `service/.env` (PostgreSQL, Redis, API keys)
 
 **Environment Variables:**
 - `ANTTHROPIC_API_KEY`: Required for Claude Code access

@@ -79,6 +79,12 @@ function TestRunDetailModal({ run, onClose }) {
               <span className="summary-label">状态：</span>
               <span className="summary-value">{getStatusBadge(run.status)}</span>
             </div>
+            {run.error_message && (
+              <div className="summary-item full-width">
+                <span className="summary-label">失败原因：</span>
+                <span className="summary-value error-message-text">{run.error_message}</span>
+              </div>
+            )}
             <div className="summary-item">
               <span className="summary-label">执行时间：</span>
               <span className="summary-value">
@@ -116,7 +122,16 @@ function TestRunDetailModal({ run, onClose }) {
             ) : error ? (
               <div className="error-state">{error}</div>
             ) : testCases.length === 0 ? (
-              <div className="empty-state">暂无测试用例数据</div>
+              <div className="empty-state">
+                <div className="empty-icon">⚠️</div>
+                <p className="empty-title">暂无测试用例数据</p>
+                {run.error_message && (
+                  <div className="empty-error-details">
+                    <strong>失败原因：</strong>
+                    <div className="error-message-box">{run.error_message}</div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="test-cases-table-container">
                 <table className="test-cases-table">

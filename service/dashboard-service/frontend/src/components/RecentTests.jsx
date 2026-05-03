@@ -108,7 +108,14 @@ function RecentTests({ testRuns = [], onRefresh }) {
                       {run.test_name || run.name || `Test #${startIndex + index + 1}`}
                     </td>
                     <td className="status-cell">
-                      {getStatusBadge(run.status || 'running')}
+                      <div className="status-with-error">
+                        {getStatusBadge(run.status || 'running')}
+                        {(run.status === 'failed' && run.error_message) && (
+                          <div className="error-tooltip" title={run.error_message}>
+                            ⚠️
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="duration-cell">
                       {formatDuration(run.duration)}

@@ -3,7 +3,7 @@
 ## ✅ Completed Tasks
 
 ### 1. Casdoor Service Integration
-- Added Casdoor container to `docker-compose/docker-compose.yml`
+- Added Casdoor container to `service/docker-compose.yml`
 - Added Casdoor PostgreSQL database for user management
 - Configured networking and volume persistence
 
@@ -14,10 +14,10 @@
 - Created `user_preferences` model for user-specific settings
 
 **Files Modified:**
-- `docker-compose/test-case-service/app/models/test_definition.py`
-- `docker-compose/scheduler-service/app/models/test_run.py`
-- `docker-compose/scheduler-service/app/models/test_case.py`
-- `docker-compose/test-case-service/app/models/user_preferences.py` (new)
+- `service/test-case-service/app/models/test_definition.py`
+- `service/scheduler-service/app/models/test_run.py`
+- `service/scheduler-service/app/models/test_case.py`
+- `service/test-case-service/app/models/user_preferences.py` (new)
 
 ### 3. Unified Authentication Service
 Created `unified_auth.py` for both test-case-service and scheduler-service:
@@ -27,8 +27,8 @@ Created `unified_auth.py` for both test-case-service and scheduler-service:
 - User authentication methods: local, Casdoor password, Casdoor OIDC
 
 **Files Created:**
-- `docker-compose/test-case-service/app/services/unified_auth.py`
-- `docker-compose/scheduler-service/app/services/unified_auth.py`
+- `service/test-case-service/app/services/unified_auth.py`
+- `service/scheduler-service/app/services/unified_auth.py`
 
 ### 4. Authentication Endpoints
 Extended auth endpoints to support both local and Casdoor authentication:
@@ -42,7 +42,7 @@ Extended auth endpoints to support both local and Casdoor authentication:
 - `GET /api/v1/auth/me` - Get current user info
 
 **Files Modified:**
-- `docker-compose/test-case-service/app/api/v1/endpoints/auth.py`
+- `service/test-case-service/app/api/v1/endpoints/auth.py`
 
 ### 5. API Endpoint Protection
 Added authentication to all protected endpoints with role-based filtering:
@@ -56,9 +56,9 @@ Added authentication to all protected endpoints with role-based filtering:
 - User-based filtering: admins see all, regular users see only their own
 
 **Files Modified:**
-- `docker-compose/test-case-service/app/api/v1/endpoints/test_definitions.py`
-- `docker-compose/test-case-service/app/api/v1/endpoints/test_steps.py`
-- `docker-compose/scheduler-service/app/api/v1/endpoints/schedules.py`
+- `service/test-case-service/app/api/v1/endpoints/test_definitions.py`
+- `service/test-case-service/app/api/v1/endpoints/test_steps.py`
+- `service/scheduler-service/app/api/v1/endpoints/schedules.py`
 
 ### 6. Frontend Authentication
 Implemented complete frontend authentication system:
@@ -75,16 +75,16 @@ Implemented complete frontend authentication system:
 - `OidcCallback.jsx` - Handles OIDC authentication callback
 
 **Files Created:**
-- `docker-compose/dashboard-service/frontend/src/services/authService.js`
-- `docker-compose/dashboard-service/frontend/src/contexts/AuthContext.jsx`
-- `docker-compose/dashboard-service/frontend/src/components/LoginPage.jsx`
-- `docker-compose/dashboard-service/frontend/src/components/LoginPage.css`
-- `docker-compose/dashboard-service/frontend/src/components/ProtectedRoute.jsx`
-- `docker-compose/dashboard-service/frontend/src/components/OidcCallback.jsx`
+- `service/dashboard-service/frontend/src/services/authService.js`
+- `service/dashboard-service/frontend/src/contexts/AuthContext.jsx`
+- `service/dashboard-service/frontend/src/components/LoginPage.jsx`
+- `service/dashboard-service/frontend/src/components/LoginPage.css`
+- `service/dashboard-service/frontend/src/components/ProtectedRoute.jsx`
+- `service/dashboard-service/frontend/src/components/OidcCallback.jsx`
 
 **Files Modified:**
-- `docker-compose/dashboard-service/frontend/src/App.jsx` - Integrated AuthProvider
-- `docker-compose/dashboard-service/frontend/src/api.js` - Updated to use authService
+- `service/dashboard-service/frontend/src/App.jsx` - Integrated AuthProvider
+- `service/dashboard-service/frontend/src/api.js` - Updated to use authService
 
 ### 7. Role-Based UI Rendering
 Added role-based messaging and data filtering to frontend components:
@@ -93,8 +93,8 @@ Added role-based messaging and data filtering to frontend components:
 - API automatically filters data based on user role
 
 **Files Modified:**
-- `docker-compose/dashboard-service/frontend/src/components/DashboardView.jsx`
-- `docker-compose/dashboard-service/frontend/src/components/TestList.jsx`
+- `service/dashboard-service/frontend/src/components/DashboardView.jsx`
+- `service/dashboard-service/frontend/src/components/TestList.jsx`
 
 ### 8. Nginx Configuration
 Updated Nginx to handle authentication:
@@ -103,7 +103,7 @@ Updated Nginx to handle authentication:
 - Configured Authorization header forwarding to all backend services
 
 **Files Modified:**
-- `docker-compose/nginx/nginx.conf`
+- `service/nginx/nginx.conf`
 
 ### 9. Environment Configuration
 Added Casdoor environment variables to `.env`:
@@ -116,7 +116,7 @@ Added Casdoor environment variables to `.env`:
 - `CASDOOR_POSTGRES_PASSWORD`
 
 **Files Modified:**
-- `docker-compose/.env`
+- `service/.env`
 
 ### 10. Setup Script
 Created comprehensive setup script for initial configuration:
@@ -125,7 +125,7 @@ Created comprehensive setup script for initial configuration:
 - Provides Casdoor configuration instructions
 
 **Files Created:**
-- `docker-compose/setup-auth.sh`
+- `service/setup-auth.sh`
 
 ## 🎯 Role-Based Access Control
 
@@ -164,7 +164,7 @@ For SSO functionality:
 1. Access Casdoor UI at `http://localhost:8002` (admin/admin)
 2. Create organization: `test-runner`
 3. Create application: `test-runner-app`
-4. Update `docker-compose/.env` with Client ID and Secret
+4. Update `service/.env` with Client ID and Secret
 5. Restart services: `docker-compose restart test-case-service scheduler-service dashboard-service`
 
 ### 4. Test Authentication

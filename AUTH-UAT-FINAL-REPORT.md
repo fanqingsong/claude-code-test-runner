@@ -19,9 +19,9 @@ All three critical blockers identified in the initial UAT have been successfully
 - Root cause: Casdoor trying to connect to MySQL (port 3306) instead of PostgreSQL
 
 ### Solution Implemented
-**File Modified:** `docker-compose/docker-compose.yml`
+**File Modified:** `service/docker-compose.yml`
 - Removed environment variables that weren't working (DRIVER, SQL_CONNECTION_STRING)
-- Created custom Casdoor configuration file: `docker-compose/casdoor/conf/app.conf`
+- Created custom Casdoor configuration file: `service/casdoor/conf/app.conf`
 - Mounted configuration file into container at `/conf/app.conf`
 
 **Configuration File Created:**
@@ -188,8 +188,8 @@ cc-test-scheduler-worker    Up 9 hours (unhealthy) ⚠️
 ## Files Changed
 
 ### Configuration
-- `docker-compose/docker-compose.yml` - Updated Casdoor service configuration
-- `docker-compose/casdoor/conf/app.conf` - NEW: Custom Casdoor configuration
+- `service/docker-compose.yml` - Updated Casdoor service configuration
+- `service/casdoor/conf/app.conf` - NEW: Custom Casdoor configuration
 
 ### Backend
 - `dashboard-service/src/server.js` - Added JWT verification and user filtering

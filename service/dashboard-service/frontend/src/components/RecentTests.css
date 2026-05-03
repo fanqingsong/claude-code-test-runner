@@ -300,3 +300,45 @@
     min-width: 28px;
   }
 }
+
+/* Error tooltip for failed tests */
+.status-with-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-tooltip {
+  cursor: help;
+  font-size: 16px;
+  position: relative;
+  display: inline-block;
+}
+
+.error-tooltip:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.error-tooltip:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333;
+  margin-bottom: -4px;
+}

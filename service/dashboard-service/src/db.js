@@ -48,7 +48,7 @@ export class DatabaseManager {
     let text = `
       SELECT
         tr.id, tr.run_id, tr.start_time, tr.end_time, tr.total_tests, tr.passed, tr.failed, tr.skipped,
-        tr.total_duration_ms, tr.status, tr.created_at, tr.test_definition_id,
+        tr.total_duration_ms, tr.status, tr.created_at, tr.test_definition_id, tr.error_message,
         td.name as test_name, td.created_by as test_owner
       FROM test_runs tr
       LEFT JOIN test_definitions td ON tr.test_definition_id = td.id
