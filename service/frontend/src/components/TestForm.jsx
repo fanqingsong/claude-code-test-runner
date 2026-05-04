@@ -28,23 +28,34 @@ const createTest = async (testData) => {
     const test = await testResponse.json();
 
     for (const step of test_steps) {
+      const stepData = {
+        type: 'action',
+        description: step.description,
+        params: {},
+        step_number: step.id
+      };
+
+      console.log('=== Creating Step ===');
+      console.log('Step data:', stepData);
+      console.log('Step ID type:', typeof step.id, 'Value:', step.id);
+      console.log('Step description type:', typeof step.description, 'Value:', step.description);
+      console.log('=====================');
+
       const stepResponse = await fetch(`${TEST_API}/test-steps/test-definition/${test.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authService.getAccessToken()}`
         },
-        body: JSON.stringify({
-          type: 'action',
-          description: step.description,
-          params: {},
-          step_number: step.id
-        }),
+        body: JSON.stringify(stepData),
         mode: 'cors'
       });
 
       if (!stepResponse.ok) {
-        throw new Error(`Failed to add step: ${stepResponse.statusText}`);
+        const errorText = await stepResponse.text();
+        console.error('Failed to add step. Status:', stepResponse.status);
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to add step: ${stepResponse.statusText} - ${errorText}`);
       }
     }
 
@@ -130,6 +141,13 @@ function TestForm(props) {
     }
     if (formData.test_steps.length === 0) {
       alert('At least one test step is required');
+      return;
+    }
+
+    // Validate that all steps have non-empty descriptions
+    const emptyStepIndex = formData.test_steps.findIndex(step => !step.description || step.description.trim() === '');
+    if (emptyStepIndex !== -1) {
+      alert(`Step ${emptyStepIndex + 1} cannot be empty. Please provide a description for each step.`);
       return;
     }
 

@@ -2,7 +2,7 @@ function StepEditor({ steps, onChange }) {
   const addStep = () => {
     const newStep = {
       id: steps.length + 1,
-      description: ''
+      description: `Step ${steps.length + 1}: Enter action description here`
     };
     onChange([...steps, newStep]);
   };
