@@ -1,0 +1,296 @@
+/* User List - IBM Carbon Design System */
+
+.user-list {
+  width: 100%;
+}
+
+.list-title {
+  margin: 0 0 var(--cds-spacing-2xl) 0;
+  font-size: var(--cds-heading-03);
+  font-weight: var(--cds-font-weight-regular);
+  color: var(--cds-text-primary);
+}
+
+.list-controls {
+  margin-bottom: var(--cds-spacing-2xl);
+}
+
+.search-input {
+  width: 100%;
+  padding: 0 16px;
+  margin-bottom: var(--cds-spacing-lg);
+  height: var(--cds-input-height);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: var(--cds-input-background);
+  border-radius: var(--cds-border-radius);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  color: var(--cds-text-primary);
+  transition: border-color var(--cds-transition-normal);
+}
+
+.search-input:focus {
+  outline: none;
+  border-bottom-color: var(--cds-focus);
+}
+
+.search-input::placeholder {
+  color: var(--cds-text-placeholder);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--cds-layout-2xl) var(--cds-layout-sm);
+  color: var(--cds-text-secondary);
+}
+
+.empty-icon {
+  font-size: var(--cds-display-01);
+  margin-bottom: var(--cds-spacing-xl);
+  color: var(--cds-text-placeholder);
+}
+
+.empty-title {
+  font-size: var(--cds-body-long-01);
+  margin: 0;
+  color: var(--cds-text-secondary);
+}
+
+.user-list-error {
+  padding: var(--cds-spacing-md);
+  background: var(--cds-support-error);
+  color: var(--cds-text-on-color);
+  border-radius: var(--cds-border-radius);
+  margin-bottom: var(--cds-spacing-md);
+}
+
+/* Table Styles - IBM Carbon */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--cds-border-radius);
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table thead {
+  background: #f4f4f4;
+  color: var(--cds-text-primary);
+}
+
+.user-table thead th {
+  padding: var(--cds-table-header-padding);
+  text-align: left;
+  font-weight: var(--cds-font-weight-semibold);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  color: var(--cds-text-primary);
+  letter-spacing: var(--cds-letter-spacing-body);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.user-table tbody tr {
+  transition: background-color var(--cds-transition-normal);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.user-table tbody tr:hover {
+  background-color: var(--cds-background-layer-01);
+}
+
+.user-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.user-table td {
+  padding: var(--cds-table-cell-padding);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  color: var(--cds-text-primary);
+}
+
+/* Cell Styles */
+
+.username-cell {
+  min-width: 150px;
+}
+
+.user-username {
+  font-weight: var(--cds-font-weight-regular);
+  color: var(--cds-text-primary);
+}
+
+.email-cell {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.user-email {
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-body-short-02);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roles-cell {
+  min-width: 150px;
+}
+
+.user-roles {
+  display: flex;
+  gap: var(--cds-spacing-sm);
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: var(--cds-spacing-xs) var(--cds-spacing-md);
+  background: var(--cds-tag-blue);
+  color: var(--cds-tag-blue-text);
+  border-radius: var(--cds-border-radius-tag);
+  font-size: var(--cds-caption-01);
+  font-family: var(--cds-font-family);
+  font-weight: var(--cds-font-weight-regular);
+}
+
+.no-roles {
+  color: var(--cds-text-placeholder);
+  font-size: var(--cds-body-short-02);
+  font-style: italic;
+}
+
+.status-cell {
+  min-width: 100px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: var(--cds-spacing-xs) var(--cds-spacing-md);
+  border-radius: var(--cds-border-radius-tag);
+  font-size: var(--cds-caption-01);
+  font-family: var(--cds-font-family);
+  font-weight: var(--cds-font-weight-regular);
+}
+
+.status-badge.active {
+  background: var(--cds-support-success);
+  color: var(--cds-text-on-color);
+}
+
+.status-badge.inactive {
+  background: var(--cds-tag-gray);
+  color: var(--cds-tag-gray-text);
+}
+
+.created-cell {
+  min-width: 120px;
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-body-short-02);
+}
+
+/* Action Buttons - IBM Carbon */
+
+.actions-cell {
+  min-width: 100px;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--cds-spacing-sm);
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--cds-border-radius);
+  cursor: pointer;
+  transition: background-color var(--cds-transition-normal);
+  color: var(--cds-text-on-color);
+}
+
+.action-btn:hover {
+  opacity: 0.9;
+}
+
+.action-btn:active {
+  opacity: 0.8;
+}
+
+.action-btn:focus {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}
+
+.activate-btn {
+  background: var(--cds-support-success);
+}
+
+.deactivate-btn {
+  background: var(--cds-interactive-03);
+}
+
+.delete-btn {
+  background: var(--cds-support-error);
+}
+
+/* Responsive Design */
+
+@media (max-width: 672px) {
+  .list-title {
+    font-size: var(--cds-heading-02);
+  }
+
+  .table-container {
+    border-radius: 0;
+  }
+
+  .user-table thead th {
+    padding: var(--cds-spacing-md) var(--cds-spacing-sm);
+    font-size: var(--cds-label-01);
+  }
+
+  .user-table td {
+    padding: var(--cds-spacing-md) var(--cds-spacing-sm);
+    font-size: var(--cds-body-short-02);
+  }
+
+  .username-cell,
+  .email-cell,
+  .roles-cell,
+  .status-cell,
+  .created-cell {
+    min-width: 100px;
+  }
+
+  .actions-cell {
+    min-width: 80px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--cds-spacing-xs);
+  }
+}
+
+@media (max-width: 320px) {
+  .list-title {
+    font-size: var(--cds-heading-01);
+  }
+
+  .user-table thead th,
+  .user-table td {
+    padding: var(--cds-spacing-sm);
+  }
+}

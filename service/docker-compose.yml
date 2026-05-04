@@ -46,8 +46,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - unified-backend-service
-      - dashboard-service
+      - backend
+      - frontend
     networks:
       - test-network
     restart: unless-stopped
@@ -57,11 +57,11 @@ services:
       timeout: 5s
       retries: 3
 
-  unified-backend-service:
+  backend:
     build:
-      context: ./unified-backend-service
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: cc-test-unified-backend
+    container_name: cc-test-backend
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
@@ -81,7 +81,7 @@ services:
       - "8011:8001"
     volumes:
       # Mount source for hot reload in development
-      - ./unified-backend-service/app:/app/app
+      - ./backend/app:/app/app
     command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"]
     depends_on:
       postgres:
@@ -94,7 +94,7 @@ services:
 
   celery-worker:
     build:
-      context: ./unified-backend-service
+      context: ./backend
       dockerfile: Dockerfile
     container_name: cc-test-celery-worker
     command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2 -Q test_execution,schedule_sync
@@ -114,7 +114,7 @@ services:
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
     volumes:
       # Mount source for hot reload in development
-      - ./unified-backend-service/app:/app/app
+      - ./backend/app:/app/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,7 +126,7 @@ services:
 
   celery-beat:
     build:
-      context: ./unified-backend-service
+      context: ./backend
       dockerfile: Dockerfile
     container_name: cc-test-celery-beat
     command: celery -A app.core.celery_app beat --loglevel=info
@@ -146,7 +146,7 @@ services:
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-300000}
     volumes:
       # Mount source for hot reload in development
-      - ./unified-backend-service/app:/app/app
+      - ./backend/app:/app/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,45 +156,19 @@ services:
       - test-network
     restart: unless-stopped
 
-  dashboard-service:
+  frontend:
     build:
-      context: ./dashboard-service
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: cc-test-dashboard-service
+    container_name: cc-test-frontend
     environment:
       NODE_ENV: development
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PORT: 8003
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key}
-      # Casdoor configuration
-      CASDOOR_ENDPOINT: http://casdoor:8000
-      CASDOOR_CLIENT_ID: ${CASDOOR_CLIENT_ID}
-      CASDOOR_CLIENT_SECRET: ${CASDOOR_CLIENT_SECRET}
-      CASDOOR_ORGANIZATION: ${CASDOOR_ORGANIZATION}
-      CASDOOR_APPLICATION: ${CASDOOR_APPLICATION}
-      CASDOOR_CERTIFICATE: ${CASDOOR_CERTIFICATE}
     ports:
-      - "8013:8003"
       - "5173:5173"  # Vite dev server port for development
     volumes:
-      # Mount backend source for hot reload in development
-      - ./dashboard-service/src:/app/src
       # Mount frontend source for hot reload in development
-      - ./dashboard-service/frontend/src:/app/frontend/src
-      - ./dashboard-service/frontend/public:/app/frontend/public:ro
-      - ./dashboard-service/frontend/vite.config.js:/app/frontend/vite.config.js:ro
-      - ./dashboard-service/frontend/index.html:/app/frontend/index.html:ro
-      - ./dashboard-service/frontend/package.json:/app/frontend/package.json:ro
-    command: ["sh", "-c", "cd /app/frontend && NODE_OPTIONS='--max-old-space-size=2048' npm run dev -- --host 0.0.0.0 & cd /app && NODE_OPTIONS='--max-old-space-size=512' node --watch src/server.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      casdoor:
-        condition: service_started
+      - ./frontend/src:/app/frontend
+    command: ["sh", "-c", "cd /app/frontend && NODE_OPTIONS='--max-old-space-size=2048' npm run dev -- --host 0.0.0.0"]
     networks:
       - test-network
     restart: unless-stopped

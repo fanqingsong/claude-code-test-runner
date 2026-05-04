@@ -1,0 +1,181 @@
+/* User Form - IBM Carbon Design System */
+
+.user-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-xl);
+}
+
+/* Alert Messages */
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cds-spacing-md);
+  padding: var(--cds-spacing-md);
+  border-radius: var(--cds-border-radius);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  animation: slideIn var(--cds-transition-normal);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-alert.error {
+  background: var(--cds-tag-red);
+  border: 1px solid var(--cds-support-error);
+  color: var(--cds-support-error);
+}
+
+.form-alert.success {
+  background: var(--cds-tag-green);
+  border: 1px solid var(--cds-support-success);
+  color: var(--cds-tag-green-text);
+}
+
+.form-alert-icon {
+  font-size: var(--cds-heading-05);
+  flex-shrink: 0;
+}
+
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-sm);
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-xs);
+  font-weight: var(--cds-font-weight-regular);
+  font-size: var(--cds-caption-01);
+  font-family: var(--cds-font-family);
+  letter-spacing: var(--cds-letter-spacing-caption);
+  color: var(--cds-text-primary);
+}
+
+.form-label.required::after {
+  content: '*';
+  color: var(--cds-support-error);
+  margin-left: var(--cds-spacing-xs);
+}
+
+.form-label-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cds-spacing-sm);
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--cds-border-radius);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  color: var(--cds-text-primary);
+  background: #f4f4f4;
+  height: var(--cds-input-height);
+  transition: border-color var(--cds-transition-normal);
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-bottom-color: var(--cds-focus);
+}
+
+.form-input::placeholder {
+  color: var(--cds-text-placeholder);
+}
+
+.form-input:disabled {
+  background: var(--cds-background-layer-02);
+  color: var(--cds-text-placeholder);
+  cursor: not-allowed;
+}
+
+.form-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: var(--cds-spacing-md);
+  margin-top: var(--cds-spacing-lg);
+}
+
+.submit-button,
+.cancel-button {
+  padding: var(--cds-button-padding-sm);
+  border: none;
+  border-radius: var(--cds-border-radius);
+  font-size: var(--cds-body-short-01);
+  font-family: var(--cds-font-family);
+  font-weight: var(--cds-font-weight-regular);
+  cursor: pointer;
+  transition: background-color var(--cds-transition-normal);
+  height: var(--cds-button-height-compact);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-button {
+  background: var(--cds-button-primary);
+  color: var(--cds-text-on-color);
+}
+
+.submit-button:hover:not(:disabled) {
+  background: var(--cds-button-primary-hover);
+}
+
+.submit-button:active:not(:disabled) {
+  background: var(--cds-button-primary-active);
+}
+
+.submit-button:disabled {
+  background: var(--cds-button-secondary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cancel-button {
+  background: var(--cds-button-secondary);
+  color: var(--cds-text-on-color);
+}
+
+.cancel-button:hover {
+  background: var(--cds-button-secondary-hover);
+}
+
+.cancel-button:active {
+  background: var(--cds-button-secondary-active);
+}
+
+/* Responsive Design */
+@media (max-width: 672px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .submit-button,
+  .cancel-button {
+    width: 100%;
+  }
+}

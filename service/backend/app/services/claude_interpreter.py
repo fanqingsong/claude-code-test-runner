@@ -29,9 +29,10 @@ class ClaudeTestInterpreter:
         else:
             try:
                 # Import Claude Code Agent SDK
-                from claude_agent_sdk import query
+                from claude_agent_sdk import query, ClaudeAgentOptions
 
                 self.query = query
+                self.ClaudeAgentOptions = ClaudeAgentOptions
                 self.sdk_available = True
                 print("Claude Code Agent SDK initialized successfully")
 
@@ -68,8 +69,8 @@ class ClaudeTestInterpreter:
             # Get current page context for Claude
             page_context = await self._get_page_context(page, context)
 
-            # Execute using Claude Code Agent SDK with direct browser control
-            result = await self._execute_with_agent(page, description, page_context)
+            # Execute using Claude Code Agent SDK
+            result = await self._execute_with_agent_sdk(page, description, page_context)
 
             return result
 
@@ -95,149 +96,89 @@ class ClaudeTestInterpreter:
             print(f"Error getting page context: {str(e)}")
             return {"url": "unknown", "title": "unknown"}
 
-    async def _execute_with_agent(
+    async def _execute_with_agent_sdk(
         self,
         page: Page,
         description: str,
         page_context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Execute the test step using Claude Code Agent SDK.
+        Execute the test step using Claude Code Agent SDK with full autonomy.
 
-        This method provides Claude Code with controlled access to Playwright tools
-        through a custom tool interface, allowing autonomous browser automation.
+        This method allows Claude to autonomously execute browser actions by using
+        Playwright CLI through the Bash tool, maintaining full control and autonomy.
         """
         try:
-            # Create a tool registry that Claude can use
-            tools = self._create_playwright_tools(page)
-
             # Build the prompt for Claude
             prompt = self._build_execution_prompt(description, page_context)
 
-            # Execute using Agent SDK with custom tools
-            result = await self._run_agent_loop(prompt, tools, page)
+            # Configure Agent SDK options with Bash tool for Playwright CLI access
+            options = self.ClaudeAgentOptions(
+                allowed_tools=[
+                    "Bash",           # For executing Playwright CLI commands
+                    "Read",           # For reading test files and configs
+                    "Write",          # For creating temporary test scripts
+                    "Grep"            # For searching in files
+                ],
+                permission_mode="auto"  # Auto-approve actions
+            )
 
-            return result
+            # Execute using Claude Code Agent SDK with full autonomy
+            from claude_agent_sdk import AssistantMessage, ResultMessage
+
+            execution_log = []
+            final_result = None
+            iteration_count = 0
+
+            print(f"[Claude SDK] Starting autonomous execution for: {description}")
+
+            async for message in self.query(
+                prompt=prompt,
+                options=options
+            ):
+                iteration_count += 1
+                print(f"[Claude SDK] Iteration {iteration_count}")
+
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if hasattr(block, "text"):
+                            text_content = block.text[:200]  # Limit log length
+                            execution_log.append(f"Claude: {text_content}")
+                            print(f"[Claude SDK] Claude: {text_content}")
+                        elif hasattr(block, "name"):
+                            tool_name = block.name
+                            execution_log.append(f"Tool called: {tool_name}")
+                            print(f"[Claude SDK] Tool: {tool_name}")
+
+                elif isinstance(message, ResultMessage):
+                    final_result = message
+                    execution_log.append(f"Done: {message.subtype}")
+                    print(f"[Claude SDK] Done: {message.subtype}")
+                    break  # Exit loop on completion
+
+            print(f"[Claude SDK] Execution completed. Success: {final_result.subtype if final_result else 'unknown'}")
+
+            # Return execution result with proper boolean success status
+            success_status = final_result.subtype == "success" if final_result else False
+
+            return {
+                "success": success_status,  # Boolean value for status checking
+                "details": "\n".join(execution_log),
+                "action": description,
+                "mode": "autonomous_claude_sdk",
+                "raw_subtype": final_result.subtype if final_result else "unknown"
+            }
 
         except Exception as e:
             return {
                 "success": False,
-                "error": f"Agent execution failed: {str(e)}",
+                "error": f"Agent SDK execution failed: {str(e)}",
                 "details": f"Attempted: {description}"
             }
 
-    def _create_playwright_tools(self, page: Page) -> Dict[str, Any]:
-        """
-        Create a dictionary of Playwright tools that Claude can use.
-
-        These tools provide Claude with direct browser control capabilities.
-        """
-        async def navigate(params):
-            url = params.get("url")
-            await page.goto(url)
-            await page.wait_for_load_state("networkidle")
-            return {"success": True, "action": "navigated", "url": url}
-
-        async def click(params):
-            selector = params.get("selector")
-            await page.click(selector)
-            await page.wait_for_load_state("networkidle")
-            return {"success": True, "action": "clicked", "selector": selector}
-
-        async def fill(params):
-            selector = params.get("selector")
-            value = params.get("value")
-            await page.fill(selector, value)
-            return {"success": True, "action": "filled", "selector": selector, "value": value}
-
-        async def wait_for_selector(params):
-            selector = params.get("selector")
-            timeout = params.get("timeout", 5000)
-            await page.wait_for_selector(selector, timeout=timeout)
-            return {"success": True, "action": "waited", "selector": selector}
-
-        async def wait_for_timeout(params):
-            timeout = params.get("timeout")
-            await page.wait_for_timeout(timeout)
-            return {"success": True, "action": "waited", "timeout": timeout}
-
-        async def screenshot(params):
-            from pathlib import Path
-            from datetime import datetime
-
-            screenshot_dir = Path(settings.SCREENSHOT_DIR)
-            screenshot_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            screenshot_path = screenshot_dir / f"screenshot_{timestamp}.png"
-
-            await page.screenshot(path=str(screenshot_path))
-            return {"success": True, "action": "screenshot", "path": str(screenshot_path)}
-
-        async def get_text_content(params):
-            selector = params.get("selector")
-            element = await page.query_selector(selector)
-            if element:
-                text = await element.text_content()
-                return {"success": True, "action": "get_text", "text": text}
-            return {"success": False, "error": "Element not found"}
-
-        return {
-            "navigate": {
-                "description": "Navigate to a URL",
-                "parameters": {
-                    "url": "string (required) - The URL to navigate to"
-                },
-                "handler": navigate
-            },
-            "click": {
-                "description": "Click an element on the page",
-                "parameters": {
-                    "selector": "string (required) - CSS selector for the element"
-                },
-                "handler": click
-            },
-            "fill": {
-                "description": "Fill an input field with text",
-                "parameters": {
-                    "selector": "string (required) - CSS selector for the input field",
-                    "value": "string (required) - The text to fill"
-                },
-                "handler": fill
-            },
-            "wait_for_selector": {
-                "description": "Wait for an element to appear on the page",
-                "parameters": {
-                    "selector": "string (required) - CSS selector for the element",
-                    "timeout": "number (optional) - Maximum wait time in milliseconds (default: 5000)"
-                },
-                "handler": wait_for_selector
-            },
-            "wait_for_timeout": {
-                "description": "Wait for a specific amount of time",
-                "parameters": {
-                    "timeout": "number (required) - Time to wait in milliseconds"
-                },
-                "handler": wait_for_timeout
-            },
-            "screenshot": {
-                "description": "Take a screenshot of the current page",
-                "parameters": {
-                    "path": "string (optional) - Path to save the screenshot (auto-generated if not provided)"
-                },
-                "handler": screenshot
-            },
-            "get_text_content": {
-                "description": "Get the text content of an element",
-                "parameters": {
-                    "selector": "string (required) - CSS selector for the element"
-                },
-                "handler": get_text_content
-            }
-        }
-
     def _build_execution_prompt(self, description: str, context: Dict[str, Any]) -> str:
-        """Build the prompt for Claude Code Agent."""
-        return f"""You are an expert browser automation assistant. Execute the following test step using the available Playwright tools.
+        """Build the prompt for Claude Code Agent SDK with Playwright CLI instructions."""
+        return f"""You are an expert browser automation assistant with full autonomous control over browser testing.
 
 **Current Page Context:**
 - URL: {context.get('url', 'unknown')}
@@ -246,162 +187,70 @@ class ClaudeTestInterpreter:
 **Test Step to Execute:**
 {description}
 
-**Available Tools:**
-1. **navigate(url)** - Navigate to a URL
-2. **click(selector)** - Click an element
-3. **fill(selector, value)** - Fill an input field
-4. **wait_for_selector(selector, timeout?)** - Wait for an element to appear
-5. **wait_for_timeout(timeout)** - Wait for a specific time (in milliseconds)
-6. **screenshot(path?)** - Take a screenshot
-7. **get_text_content(selector)** - Get text content of an element
+**Your Capabilities:**
+You have FULL AUTONOMOUS ACCESS to browser automation through Playwright CLI. You can:
+
+1. **Use Bash tool to execute Playwright commands:**
+   - `playwright codegen <url>` - Record and generate code
+   - `playwright test` - Run tests
+   - `npx playwright screenshot <file> --url=<url>` - Take screenshot
+   - Node.js scripts with Playwright API
+
+2. **Create and execute JavaScript files** with Playwright:
+   ```bash
+   cat > test.js << 'EOF'
+   const {{ chromium }} = require('playwright');
+   (async () => {{
+     const browser = await chromium.launch();
+     const page = await browser.newPage();
+     await page.goto('https://example.com');
+     await page.click('#button');
+     await browser.close();
+   }})();
+   EOF
+   node test.js
+   ```
+
+3. **Direct Playwright CLI operations:**
+   - `npx playwright-cli screenshot <url> <file>`
+   - `npx playwright-cli pdf <url> <file>`
+   - `npx playwright-cli codegen <url>`
+
+**Execution Strategy:**
+1. Create temporary JavaScript files using Write tool
+2. Execute them using Bash tool with Node.js and Playwright
+3. Verify results and take screenshots for debugging
+4. Report detailed execution results
+
+**Example Workflow:**
+```bash
+# Create test script
+cat > /tmp/test_step.js << 'EOF'
+const {{ chromium }} = require('playwright');
+(async () => {{
+  const browser = await chromium.launch({{ headless: true }});
+  const page = await browser.newPage();
+  await page.goto('https://example.com');
+  await page.fill('#username', 'testuser');
+  await page.click('#login-btn');
+  await page.screenshot({{ path: '/tmp/result.png' }});
+  await browser.close();
+}})();
+EOF
+
+# Execute the script
+node /tmp/test_step.js
+```
 
 **Instructions:**
 1. Analyze the test step
-2. Use the appropriate tools to execute it
-3. Handle errors gracefully
-4. Report what was executed
+2. Create appropriate Playwright scripts
+3. Execute them autonomously using Bash
+4. Take screenshots for verification
+5. Report detailed results
 
-**Tool Usage Format:**
-To use a tool, output in this format:
-TOOL: tool_name
-PARAMS: {{"param1": "value1", "param2": "value2"}}
-
-Execute the test step now.
+Execute the test step now using Playwright CLI through Bash commands.
 """
-
-    async def _run_agent_loop(
-        self,
-        prompt: str,
-        tools: Dict[str, Any],
-        page: Page
-    ) -> Dict[str, Any]:
-        """
-        Run the agent loop with Claude Code SDK.
-
-        This simplified implementation parses Claude's responses and executes
-        the appropriate Playwright tools.
-        """
-        try:
-            # Use Anthropic API directly for now (simpler integration)
-            from anthropic import Anthropic
-
-            client = Anthropic(api_key=self.api_key)
-
-            # Call Claude to interpret the test step
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1024,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt + "\n\nOutput the tool call in the specified format."
-                    }
-                ]
-            )
-
-            # Extract Claude's response
-            claude_response = response.content[0].text
-
-            # Parse and execute the tool call
-            result = await self._parse_and_execute_tool_call(claude_response, tools)
-
-            return result
-
-        except Exception as e:
-            # If agent SDK fails, try direct interpretation
-            return await self._direct_interpret_and_execute(page, prompt, tools)
-
-    async def _parse_and_execute_tool_call(
-        self,
-        response: str,
-        tools: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Parse Claude's response and execute the appropriate tool."""
-        import re
-
-        # Parse tool call format
-        tool_match = re.search(r'TOOL:\s*(\w+)', response, re.IGNORECASE)
-        params_match = re.search(r'PARAMS:\s*(\{[^}]+\})', response, re.IGNORECASE)
-
-        if tool_match:
-            tool_name = tool_match.group(1).lower()
-
-            if tool_name in tools:
-                tool = tools[tool_name]
-
-                # Parse parameters
-                params = {}
-                if params_match:
-                    try:
-                        params = eval(params_match.group(1))
-                    except:
-                        pass
-
-                # Execute the tool
-                try:
-                    result = await tool["handler"](params)
-                    return {
-                        "success": True,
-                        "details": f"Executed {tool_name}: {result}",
-                        "action": tool_name
-                    }
-                except Exception as e:
-                    return {
-                        "success": False,
-                        "error": f"Tool execution failed: {str(e)}",
-                        "details": f"Attempted to execute {tool_name}"
-                    }
-            else:
-                return {
-                    "success": False,
-                    "error": f"Unknown tool: {tool_name}",
-                    "details": response
-                }
-
-        # If no tool call found, try to interpret directly
-        return {
-            "success": True,
-            "details": f"Claude interpreted: {response}",
-            "note": "No direct tool call found - response requires manual verification"
-        }
-
-    async def _direct_interpret_and_execute(
-        self,
-        page: Page,
-        prompt: str,
-        tools: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Direct interpretation and execution without Agent SDK."""
-        # Use Anthropic API to get interpretation
-        from anthropic import Anthropic
-
-        try:
-            client = Anthropic(api_key=self.api_key)
-
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=512,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt + "\n\nRespond with a brief description of what you would do to execute this step."
-                    }
-                ]
-            )
-
-            interpretation = response.content[0].text
-
-            return {
-                "success": True,
-                "details": f"AI interpretation: {interpretation}",
-                "note": "Using interpretation mode - manual verification recommended"
-            }
-
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"Direct interpretation failed: {str(e)}"
-            }
 
     async def _fallback_interpretation(
         self,
