@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import authService from '../services/authService';
 import { createTest, updateTest } from '../api';
-// import StepEditor from './StepEditor';  // Temporarily disabled due to loading issue
+import StepEditor from './StepEditor';
 
 function TestForm(props) {
   const { onTestCreated, editingTest, onCancel } = props;
@@ -402,9 +402,7 @@ function TestForm(props) {
           </div>
         </div>
 
-        {/* StepEditor temporarily disabled due to loading issue
         <StepEditor steps={formData.test_steps} onChange={(steps) => setFormData({...formData, test_steps: steps})} />
-        */}
 
         <div style={{display: 'flex', gap: 'var(--cds-spacing-sm)', marginTop: 'var(--cds-spacing-lg)'}}>
           <button
