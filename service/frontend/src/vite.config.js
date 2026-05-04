@@ -24,7 +24,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     force: true,
-    include: ['react', 'react-dom', 'react-dom/client']
+    include: ['react', 'react-dom', 'react-dom/client'],
+    exclude: []
   },
   // 禁用源码映射以提高性能
   build: {

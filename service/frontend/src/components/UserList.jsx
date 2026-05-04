@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import './UserList.css';
 
-const UserList = ({ refreshKey }) => {
+const UserList = ({ refreshKey, onEditUser }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -179,6 +179,16 @@ const UserList = ({ refreshKey }) => {
                   </td>
                   <td className="actions-cell">
                     <div className="action-buttons">
+                      <button
+                        onClick={() => onEditUser && onEditUser(user)}
+                        className="action-btn edit-btn"
+                        title="编辑用户"
+                        aria-label="编辑用户"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                      </button>
                       <button
                         onClick={() => handleToggleActive(user.id, user.is_active)}
                         className={`action-btn ${user.is_active ? 'deactivate-btn' : 'activate-btn'}`}

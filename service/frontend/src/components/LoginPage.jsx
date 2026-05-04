@@ -1,10 +1,10 @@
 /**
  * LoginPage
  *
- * Login page with three authentication methods:
+ * Login page with local authentication:
  * 1. Local username/password
- * 2. Casdoor username/password
- * 3. Casdoor OIDC/SSO
+ *
+ * Note: Casdoor and SSO options have been hidden
  */
 
 import { useState } from 'react';
@@ -89,18 +89,7 @@ function LoginPage() {
           >
             Local Account
           </button>
-          <button
-            className={`tab-button ${activeTab === 'casdoor' ? 'active' : ''}`}
-            onClick={() => setActiveTab('casdoor')}
-          >
-            Casdoor Password
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'sso' ? 'active' : ''}`}
-            onClick={() => setActiveTab('sso')}
-          >
-            SSO Login
-          </button>
+          {/* Casdoor and SSO options hidden */}
         </div>
 
         {/* Error Message */}
@@ -151,67 +140,7 @@ function LoginPage() {
           </form>
         )}
 
-        {/* Casdoor Password Login Form */}
-        {activeTab === 'casdoor' && (
-          <form className="login-form" onSubmit={handleCasdoorLogin}>
-            <div className="form-group">
-              <label htmlFor="casdoor-username">Casdoor Username</label>
-              <input
-                id="casdoor-username"
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your Casdoor username"
-                disabled={loading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="casdoor-password">Password</label>
-              <input
-                id="casdoor-password"
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your Casdoor password"
-                disabled={loading}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="login-button"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In with Casdoor'}
-            </button>
-          </form>
-        )}
-
-        {/* OIDC/SSO Login */}
-        {activeTab === 'sso' && (
-          <div className="sso-login">
-            <div className="sso-description">
-              Sign in using your organization's single sign-on (SSO) provider.
-            </div>
-
-            <button
-              onClick={handleOidcLogin}
-              className="sso-button"
-              disabled={loading}
-            >
-              {loading ? 'Redirecting...' : 'Sign In with SSO (Casdoor)'}
-            </button>
-
-            <div className="sso-note">
-              You will be redirected to Casdoor to complete the sign-in process.
-            </div>
-          </div>
-        )}
+        {/* Casdoor and SSO forms hidden */}
 
         {/* Footer */}
         <div className="login-footer">

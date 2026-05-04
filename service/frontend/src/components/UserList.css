@@ -245,6 +245,10 @@
   background: var(--cds-support-error);
 }
 
+.edit-btn {
+  background: var(--cds-interactive-01);
+}
+
 /* Responsive Design */
 
 @media (max-width: 672px) {

@@ -207,6 +207,12 @@ function AppContent() {
     }
   };
 
+  // User management handlers
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setShowUserForm(true);
+  };
+
   const navStyle = {
     display: 'flex',
     background: 'var(--cds-background-inverse)',
@@ -338,7 +344,10 @@ function AppContent() {
               </button>
             </div>
 
-            <UserList refreshKey={userRefreshKey} />
+            <UserList
+              refreshKey={userRefreshKey}
+              onEditUser={handleEditUser}
+            />
 
             {/* 创建/编辑用户 Modal */}
             <Modal

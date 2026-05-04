@@ -8,72 +8,71 @@ const TEST_API = `${BASE_URL}/api/v1`;
 
 const createTest = async (testData) => {
   try {
-    const { test_steps, ...testInfo } = testData;
-    const createUrl = `${TEST_API}/test-definitions/`;
+    // Generate test_id if not provided
+    if (!testData.test_id || testData.test_id.trim() === '') {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 8);
+      testData.test_id = `test-${timestamp}-${random}`;
+    }
 
-    const testResponse = await fetch(createUrl, {
+    // Prepare test steps with proper format
+    const formattedSteps = testData.test_steps.map((step, index) => ({
+      step_number: index + 1,
+      description: step.description.trim() || `Step ${index + 1}`,
+      type: 'action',
+      params: {},
+      expected_result: null
+    }));
+
+    // Include test_steps in the creation payload
+    const createPayload = {
+      ...testData,
+      test_steps: formattedSteps
+    };
+
+    console.log('=== Creating Test ===');
+    console.log('Payload:', createPayload);
+    console.log('====================');
+
+    const testResponse = await fetch(`${TEST_API}/test-definitions/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authService.getAccessToken()}`
       },
-      body: JSON.stringify(testInfo),
+      body: JSON.stringify(createPayload),
       mode: 'cors'
     });
 
     if (!testResponse.ok) {
-      throw new Error(`Failed to create test: ${testResponse.statusText}`);
+      const errorText = await testResponse.text();
+      console.error('Failed to create test. Status:', testResponse.status);
+      console.error('Error response:', errorText);
+      throw new Error(`Failed to create test: ${testResponse.statusText} - ${errorText}`);
     }
 
     const test = await testResponse.json();
-
-    for (const step of test_steps) {
-      const stepData = {
-        type: 'action',
-        description: step.description,
-        params: {},
-        step_number: step.id
-      };
-
-      console.log('=== Creating Step ===');
-      console.log('Step data:', stepData);
-      console.log('Step ID type:', typeof step.id, 'Value:', step.id);
-      console.log('Step description type:', typeof step.description, 'Value:', step.description);
-      console.log('=====================');
-
-      const stepResponse = await fetch(`${TEST_API}/test-steps/test-definition/${test.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authService.getAccessToken()}`
-        },
-        body: JSON.stringify(stepData),
-        mode: 'cors'
-      });
-
-      if (!stepResponse.ok) {
-        const errorText = await stepResponse.text();
-        console.error('Failed to add step. Status:', stepResponse.status);
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to add step: ${stepResponse.statusText} - ${errorText}`);
-      }
-    }
-
+    console.log('Test created successfully:', test);
     return test;
   } catch (error) {
     console.error('Error creating test:', error);
-    throw new Error('Failed to create test. Please try again.');
+    throw error;
   }
 };
 
 const updateTest = async (testId, testData) => {
   try {
+    // Use test_id instead of numeric ID for PUT request
+    const testIdString = testData.test_id || testId.toString();
+
+    // Update test basic info (excluding test_steps for now)
     const { test_steps, ...testInfo } = testData;
 
-    // Use test_id instead of numeric ID for PUT request
-    const testIdString = testInfo.test_id || testId.toString();
+    console.log('=== Updating Test ===');
+    console.log('Test ID:', testIdString);
+    console.log('Test info:', testInfo);
+    console.log('====================');
 
-    // Update test basic info
     const testResponse = await fetch(`${TEST_API}/test-definitions/${testIdString}`, {
       method: 'PUT',
       headers: {
@@ -86,6 +85,8 @@ const updateTest = async (testId, testData) => {
 
     if (!testResponse.ok) {
       const errorText = await testResponse.text();
+      console.error('Failed to update test. Status:', testResponse.status);
+      console.error('Error response:', errorText);
       throw new Error(`Failed to update test: ${testResponse.statusText} - ${errorText}`);
     }
 
@@ -122,10 +123,15 @@ const updateTest = async (testId, testData) => {
     for (const step of test_steps) {
       const stepData = {
         type: 'action',
-        description: step.description,
+        description: step.description.trim() || `Step ${step.id}`,
         params: {},
-        step_number: step.id
+        step_number: step.id,
+        expected_result: null
       };
+
+      console.log('=== Creating Step ===');
+      console.log('Step data:', stepData);
+      console.log('=====================');
 
       const stepResponse = await fetch(`${TEST_API}/test-steps/test-definition/${internalId}`, {
         method: 'POST',
@@ -139,6 +145,8 @@ const updateTest = async (testId, testData) => {
 
       if (!stepResponse.ok) {
         const errorText = await stepResponse.text();
+        console.error('Failed to add step. Status:', stepResponse.status);
+        console.error('Error response:', errorText);
         throw new Error(`Failed to add step: ${stepResponse.statusText} - ${errorText}`);
       }
     }
