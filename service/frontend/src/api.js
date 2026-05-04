@@ -70,7 +70,9 @@ export const createTest = async (testData) => {
     const { test_steps, ...testInfo } = testData;
 
     // Create test
-    const testResponse = await fetch(`${TEST_API}/test-definitions`, {
+    // ROOT CAUSE: Missing trailing slash caused ERR_CONNECTION_REFUSED
+    // Nginx routes /api/v1/ with trailing slash, so POST endpoint must match
+    const testResponse = await fetch(`${TEST_API}/test-definitions/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
