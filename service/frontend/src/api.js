@@ -2,6 +2,14 @@
 // Use the current origin (protocol + hostname + port) to work in all environments
 const BASE_URL = window.location.origin;
 
+// Debug logging to verify BASE_URL
+console.log('=== API Configuration ===');
+console.log('window.location.href:', window.location.href);
+console.log('window.location.origin:', window.location.origin);
+console.log('BASE_URL:', BASE_URL);
+console.log('TEST_API:', `${BASE_URL}/api/v1`);
+console.log('========================');
+
 const TEST_API = `${BASE_URL}/api/v1`;
 const DASHBOARD_API = `${BASE_URL}/api/v1/analytics`;
 const SCHEDULER_API = `${BASE_URL}/api/v1`;
@@ -72,7 +80,13 @@ export const createTest = async (testData) => {
     // Create test
     // ROOT CAUSE: Missing trailing slash caused ERR_CONNECTION_REFUSED
     // Nginx routes /api/v1/ with trailing slash, so POST endpoint must match
-    const testResponse = await fetch(`${TEST_API}/test-definitions/`, {
+    const createUrl = `${TEST_API}/test-definitions/`;
+    console.log('=== Creating Test ===');
+    console.log('Full URL:', createUrl);
+    console.log('Request body:', JSON.stringify(testInfo, null, 2));
+    console.log('====================');
+
+    const testResponse = await fetch(createUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
