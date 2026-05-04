@@ -79,6 +79,12 @@ function TestForm(props) {
 
     setSubmitting(true);
     try {
+      // Debug: Check current origin before API call
+      console.log('=== TestForm Submit Debug ===');
+      console.log('window.location.origin:', window.location.origin);
+      console.log('About to call createTest with:', formData);
+      console.log('============================');
+
       if (editingTest) {
         await updateTest(editingTest.id, formData);
         alert('Test updated successfully!');

@@ -1,6 +1,7 @@
 // API Base URLs
-// Use the current origin (protocol + hostname + port) to work in all environments
-const BASE_URL = window.location.origin;
+// TEMPORARY FIX: Hardcode the base URL to resolve caching issues
+// TODO: Revert to window.location.origin after cache issue is resolved
+const BASE_URL = 'http://localhost:8080';  // window.location.origin;
 
 // Debug logging to verify BASE_URL
 console.log('=== API Configuration ===');
@@ -9,6 +10,11 @@ console.log('window.location.origin:', window.location.origin);
 console.log('BASE_URL:', BASE_URL);
 console.log('TEST_API:', `${BASE_URL}/api/v1`);
 console.log('========================');
+
+// Set a global flag to verify this code is loaded
+window.__API_JS_LOADED__ = true;
+window.__API_BASE_URL__ = BASE_URL;
+window.__API_TEST_API__ = `${BASE_URL}/api/v1`;
 
 const TEST_API = `${BASE_URL}/api/v1`;
 const DASHBOARD_API = `${BASE_URL}/api/v1/analytics`;
