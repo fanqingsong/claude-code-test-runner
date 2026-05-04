@@ -67,7 +67,87 @@ const createTest = async (testData) => {
 };
 
 const updateTest = async (testId, testData) => {
-  return (await import('../api')).then(m => m.updateTest(testId, testData));
+  try {
+    const { test_steps, ...testInfo } = testData;
+
+    // Use test_id instead of numeric ID for PUT request
+    const testIdString = testInfo.test_id || testId.toString();
+
+    // Update test basic info
+    const testResponse = await fetch(`${TEST_API}/test-definitions/${testIdString}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authService.getAccessToken()}`
+      },
+      body: JSON.stringify(testInfo),
+      mode: 'cors'
+    });
+
+    if (!testResponse.ok) {
+      const errorText = await testResponse.text();
+      throw new Error(`Failed to update test: ${testResponse.statusText} - ${errorText}`);
+    }
+
+    const test = await testResponse.json();
+
+    // Get the internal ID from the response
+    const internalId = test.id;
+
+    // Update steps - delete existing steps and add new ones
+    // First, delete existing steps using internal ID
+    const existingStepsResponse = await fetch(`${TEST_API}/test-steps/test-definition/${internalId}`, {
+      headers: {
+        'Authorization': `Bearer ${authService.getAccessToken()}`
+      },
+      mode: 'cors'
+    });
+
+    if (existingStepsResponse.ok) {
+      const existingSteps = await existingStepsResponse.json();
+
+      // Delete each existing step
+      for (const step of existingSteps) {
+        await fetch(`${TEST_API}/test-steps/${step.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authService.getAccessToken()}`
+          },
+          mode: 'cors'
+        });
+      }
+    }
+
+    // Add new steps using internal ID
+    for (const step of test_steps) {
+      const stepData = {
+        type: 'action',
+        description: step.description,
+        params: {},
+        step_number: step.id
+      };
+
+      const stepResponse = await fetch(`${TEST_API}/test-steps/test-definition/${internalId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getAccessToken()}`
+        },
+        body: JSON.stringify(stepData),
+        mode: 'cors'
+      });
+
+      if (!stepResponse.ok) {
+        const errorText = await stepResponse.text();
+        throw new Error(`Failed to add step: ${stepResponse.statusText} - ${errorText}`);
+      }
+    }
+
+    return test;
+  } catch (error) {
+    console.error('Error updating test:', error);
+    throw error;
+  }
 };
 
 function TestForm(props) {
