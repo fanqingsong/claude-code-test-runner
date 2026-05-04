@@ -1,7 +1,63 @@
 import { useState, useEffect } from 'react';
 import authService from '../services/authService';
-import { createTest, updateTest } from '../api';
+// TEMPORARY: Directly define API functions here to bypass module caching
 import StepEditor from './StepEditor';
+
+const BASE_URL = 'http://localhost:8080';
+const TEST_API = `${BASE_URL}/api/v1`;
+
+const createTest = async (testData) => {
+  try {
+    const { test_steps, ...testInfo } = testData;
+    const createUrl = `${TEST_API}/test-definitions/`;
+
+    const testResponse = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authService.getAccessToken()}`
+      },
+      body: JSON.stringify(testInfo),
+      mode: 'cors'
+    });
+
+    if (!testResponse.ok) {
+      throw new Error(`Failed to create test: ${testResponse.statusText}`);
+    }
+
+    const test = await testResponse.json();
+
+    for (const step of test_steps) {
+      const stepResponse = await fetch(`${TEST_API}/test-steps/test-definition/${test.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getAccessToken()}`
+        },
+        body: JSON.stringify({
+          type: 'action',
+          description: step.description,
+          params: {},
+          step_number: step.id
+        }),
+        mode: 'cors'
+      });
+
+      if (!stepResponse.ok) {
+        throw new Error(`Failed to add step: ${stepResponse.statusText}`);
+      }
+    }
+
+    return test;
+  } catch (error) {
+    console.error('Error creating test:', error);
+    throw new Error('Failed to create test. Please try again.');
+  }
+};
+
+const updateTest = async (testId, testData) => {
+  return (await import('../api')).then(m => m.updateTest(testId, testData));
+};
 
 function TestForm(props) {
   const { onTestCreated, editingTest, onCancel } = props;
