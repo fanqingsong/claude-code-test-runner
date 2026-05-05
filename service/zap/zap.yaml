@@ -1,0 +1,33 @@
+# OWASP ZAP Configuration
+# ZAP will be configured with these settings on startup
+
+# API Configuration
+api:
+  addrs:
+    - name: ".*"
+      regex: true
+  disablekey: true
+
+# Spider Configuration
+spider:
+  maxDepth: 5
+  duration: 60
+  threads: 5
+
+# Active Scan Configuration
+activeScan:
+  policy: Default Policy
+  maxDuration: 60
+
+# Passive Scan Configuration
+passiveScan:
+  enable: true
+
+# Report Configuration
+reports:
+  - type: html
+    filename: zap-report.html
+  - type: json
+    filename: zap-report.json
+  - type: xml
+    filename: zap-report.xml
