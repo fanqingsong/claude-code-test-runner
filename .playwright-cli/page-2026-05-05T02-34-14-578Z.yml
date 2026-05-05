@@ -1,0 +1,114 @@
+- generic [ref=e1032]:
+  - navigation [ref=e1033]:
+    - generic [ref=e1034]:
+      - button "仪表板" [ref=e1035] [cursor=pointer]
+      - button "测试管理" [active] [ref=e1036] [cursor=pointer]
+      - button "调度配置" [ref=e1037] [cursor=pointer]
+      - button "用户配置" [ref=e1038] [cursor=pointer]
+      - button "SSO 配置" [ref=e1039] [cursor=pointer]
+    - generic [ref=e1040]:
+      - generic [ref=e1041]: admin
+      - button "退出登录" [ref=e1042] [cursor=pointer]
+  - generic [ref=e1275]:
+    - generic [ref=e1276]:
+      - heading "测试管理" [level=2] [ref=e1277]
+      - button "+ 创建测试" [ref=e1278] [cursor=pointer]:
+        - generic [ref=e1279]: +
+        - generic [ref=e1280]: 创建测试
+    - generic [ref=e1281]:
+      - heading "测试用例 (5)" [level=2] [ref=e1282]
+      - generic [ref=e1283]: 👑 管理员模式 - 显示所有用户的测试用例
+      - textbox "搜索测试用例..." [ref=e1285]
+      - table [ref=e1287]:
+        - rowgroup [ref=e1288]:
+          - row "名称 描述 标签 操作" [ref=e1289]:
+            - columnheader "名称" [ref=e1290]
+            - columnheader "描述" [ref=e1291]
+            - columnheader "标签" [ref=e1292]
+            - columnheader "操作" [ref=e1293]
+        - rowgroup [ref=e1294]:
+          - row "test 无描述 无标签 立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1295]:
+            - cell "test" [ref=e1296]:
+              - generic [ref=e1297]: test
+            - cell "无描述" [ref=e1298]:
+              - generic [ref=e1299]: 无描述
+            - cell "无标签" [ref=e1300]:
+              - generic [ref=e1302]: 无标签
+            - cell "立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1303]:
+              - generic [ref=e1304]:
+                - button "立即执行测试" [ref=e1305] [cursor=pointer]:
+                  - img [ref=e1306]
+                - button "查看测试详情" [ref=e1308] [cursor=pointer]:
+                  - img [ref=e1309]
+                - button "查看运行历史" [ref=e1311] [cursor=pointer]:
+                  - img [ref=e1312]
+                - button "编辑测试" [ref=e1314] [cursor=pointer]:
+                  - img [ref=e1315]
+          - row "Direct API Test Testing validation fix 无标签 立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1317]:
+            - cell "Direct API Test" [ref=e1318]:
+              - generic [ref=e1319]: Direct API Test
+            - cell "Testing validation fix" [ref=e1320]:
+              - generic [ref=e1321]: Testing validation fix
+            - cell "无标签" [ref=e1322]:
+              - generic [ref=e1324]: 无标签
+            - cell "立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1325]:
+              - generic [ref=e1326]:
+                - button "立即执行测试" [ref=e1327] [cursor=pointer]:
+                  - img [ref=e1328]
+                - button "查看测试详情" [ref=e1330] [cursor=pointer]:
+                  - img [ref=e1331]
+                - button "查看运行历史" [ref=e1333] [cursor=pointer]:
+                  - img [ref=e1334]
+                - button "编辑测试" [ref=e1336] [cursor=pointer]:
+                  - img [ref=e1337]
+          - row "Debug 422 Debug step validation error 无标签 立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1339]:
+            - cell "Debug 422" [ref=e1340]:
+              - generic [ref=e1341]: Debug 422
+            - cell "Debug step validation error" [ref=e1342]:
+              - generic [ref=e1343]: Debug step validation error
+            - cell "无标签" [ref=e1344]:
+              - generic [ref=e1346]: 无标签
+            - cell "立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1347]:
+              - generic [ref=e1348]:
+                - button "立即执行测试" [ref=e1349] [cursor=pointer]:
+                  - img [ref=e1350]
+                - button "查看测试详情" [ref=e1352] [cursor=pointer]:
+                  - img [ref=e1353]
+                - button "查看运行历史" [ref=e1355] [cursor=pointer]:
+                  - img [ref=e1356]
+                - button "编辑测试" [ref=e1358] [cursor=pointer]:
+                  - img [ref=e1359]
+          - row "Direct API Test Testing direct API call in TestForm 无标签 立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1361]:
+            - cell "Direct API Test" [ref=e1362]:
+              - generic [ref=e1363]: Direct API Test
+            - cell "Testing direct API call in TestForm" [ref=e1364]:
+              - generic [ref=e1365]: Testing direct API call in TestForm
+            - cell "无标签" [ref=e1366]:
+              - generic [ref=e1368]: 无标签
+            - cell "立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1369]:
+              - generic [ref=e1370]:
+                - button "立即执行测试" [ref=e1371] [cursor=pointer]:
+                  - img [ref=e1372]
+                - button "查看测试详情" [ref=e1374] [cursor=pointer]:
+                  - img [ref=e1375]
+                - button "查看运行历史" [ref=e1377] [cursor=pointer]:
+                  - img [ref=e1378]
+                - button "编辑测试" [ref=e1380] [cursor=pointer]:
+                  - img [ref=e1381]
+          - row "Sample Login Test A sample test for login functionality 无标签 立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1383]:
+            - cell "Sample Login Test" [ref=e1384]:
+              - generic [ref=e1385]: Sample Login Test
+            - cell "A sample test for login functionality" [ref=e1386]:
+              - generic [ref=e1387]: A sample test for login functionality
+            - cell "无标签" [ref=e1388]:
+              - generic [ref=e1390]: 无标签
+            - cell "立即执行测试 查看测试详情 查看运行历史 编辑测试" [ref=e1391]:
+              - generic [ref=e1392]:
+                - button "立即执行测试" [ref=e1393] [cursor=pointer]:
+                  - img [ref=e1394]
+                - button "查看测试详情" [ref=e1396] [cursor=pointer]:
+                  - img [ref=e1397]
+                - button "查看运行历史" [ref=e1399] [cursor=pointer]:
+                  - img [ref=e1400]
+                - button "编辑测试" [ref=e1402] [cursor=pointer]:
+                  - img [ref=e1403]

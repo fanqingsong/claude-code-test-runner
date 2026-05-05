@@ -1,0 +1,119 @@
+- generic [ref=e511]:
+  - navigation [ref=e512]:
+    - generic [ref=e513]:
+      - button "仪表板" [ref=e514] [cursor=pointer]
+      - button "测试管理" [ref=e515] [cursor=pointer]
+      - button "调度配置" [ref=e516] [cursor=pointer]
+      - button "用户配置" [ref=e517] [cursor=pointer]
+      - button "SSO 配置" [ref=e518] [cursor=pointer]
+    - generic [ref=e519]:
+      - generic [ref=e520]: admin
+      - button "退出登录" [ref=e521] [cursor=pointer]
+  - generic [ref=e523]:
+    - heading "测试仪表板" [level=1] [ref=e524]
+    - generic [ref=e525]: 👑 管理员视图 - 查看所有用户的测试数据
+    - generic [ref=e526]:
+      - generic [ref=e527]:
+        - generic [ref=e528]: 总运行数
+        - generic [ref=e529]: "213"
+        - generic [ref=e530]: "成功: 151 | 失败: 62"
+      - generic [ref=e531]:
+        - generic [ref=e532]: 通过率
+        - generic [ref=e533]: 94%
+        - generic [ref=e534]: 912 通过 / 56 失败
+      - generic [ref=e535]:
+        - generic [ref=e536]: 平均执行时长
+        - generic [ref=e537]: 0s
+        - generic [ref=e538]: 基于所有完成的测试运行
+      - generic [ref=e539]:
+        - generic [ref=e540]: 测试用例总数
+        - generic [ref=e541]: "5"
+        - generic [ref=e542]: 活跃的测试定义
+    - generic [ref=e544]:
+      - generic [ref=e545]:
+        - heading "最近测试运行" [level=3] [ref=e546]
+        - generic [ref=e547]: 显示 1-10 / 20 条记录
+      - table [ref=e549]:
+        - rowgroup [ref=e550]:
+          - row "测试名称 状态 执行时长 执行时间" [ref=e551]:
+            - columnheader "测试名称" [ref=e552]
+            - columnheader "状态" [ref=e553]
+            - columnheader "执行时长" [ref=e554]
+            - columnheader "执行时间" [ref=e555]
+        - rowgroup [ref=e556]:
+          - row "Sample Login Test ●通过 116m 20s 21小时前" [ref=e557] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e558]
+            - cell "●通过" [ref=e559]:
+              - generic [ref=e561]: ●通过
+            - cell "116m 20s" [ref=e562]
+            - cell "21小时前" [ref=e563]
+          - row "Sample Login Test ●通过 4m 29s 5月4日 10:06" [ref=e564] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e565]
+            - cell "●通过" [ref=e566]:
+              - generic [ref=e568]: ●通过
+            - cell "4m 29s" [ref=e569]
+            - cell "5月4日 10:06" [ref=e570]
+          - row "Sample Login Test ●通过 6m 46s 5月4日 09:48" [ref=e571] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e572]
+            - cell "●通过" [ref=e573]:
+              - generic [ref=e575]: ●通过
+            - cell "6m 46s" [ref=e576]
+            - cell "5月4日 09:48" [ref=e577]
+          - row "Sample Login Test ●通过 3m 13s 5月4日 09:45" [ref=e578] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e579]
+            - cell "●通过" [ref=e580]:
+              - generic [ref=e582]: ●通过
+            - cell "3m 13s" [ref=e583]
+            - cell "5月4日 09:45" [ref=e584]
+          - row "Sample Login Test ●通过 22m 7s 5月4日 09:44" [ref=e585] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e586]
+            - cell "●通过" [ref=e587]:
+              - generic [ref=e589]: ●通过
+            - cell "22m 7s" [ref=e590]
+            - cell "5月4日 09:44" [ref=e591]
+          - row "Sample Login Test ●通过 4m 25s 5月4日 09:40" [ref=e592] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e593]
+            - cell "●通过" [ref=e594]:
+              - generic [ref=e596]: ●通过
+            - cell "4m 25s" [ref=e597]
+            - cell "5月4日 09:40" [ref=e598]
+          - row "Sample Login Test ●通过 6m 7s 5月4日 09:39" [ref=e599] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e600]
+            - cell "●通过" [ref=e601]:
+              - generic [ref=e603]: ●通过
+            - cell "6m 7s" [ref=e604]
+            - cell "5月4日 09:39" [ref=e605]
+          - row "Sample Login Test ●通过 5m 34s 5月4日 09:35" [ref=e606] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e607]
+            - cell "●通过" [ref=e608]:
+              - generic [ref=e610]: ●通过
+            - cell "5m 34s" [ref=e611]
+            - cell "5月4日 09:35" [ref=e612]
+          - row "Sample Login Test ●通过 6m 57s 5月4日 09:34" [ref=e613] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e614]
+            - cell "●通过" [ref=e615]:
+              - generic [ref=e617]: ●通过
+            - cell "6m 57s" [ref=e618]
+            - cell "5月4日 09:34" [ref=e619]
+          - row "Sample Login Test ●失败 1s 5月4日 09:33" [ref=e620] [cursor=pointer]:
+            - cell "Sample Login Test" [ref=e621]
+            - cell "●失败" [ref=e622]:
+              - generic [ref=e624]: ●失败
+            - cell "1s" [ref=e625]
+            - cell "5月4日 09:33" [ref=e626]
+      - generic [ref=e627]:
+        - generic [ref=e628]: 第 1 / 2 页
+        - generic [ref=e629]:
+          - button "第一页" [disabled] [ref=e630]: 首页
+          - button "上一页" [disabled] [ref=e631]
+          - button "第 1 页" [ref=e632] [cursor=pointer]: "1"
+          - button "第 2 页" [ref=e633] [cursor=pointer]: "2"
+          - button "下一页" [ref=e634] [cursor=pointer]
+          - button "末页" [ref=e635] [cursor=pointer]
+        - generic [ref=e636]:
+          - generic [ref=e637]: 每页显示：
+          - combobox [ref=e638] [cursor=pointer]:
+            - option "10条" [selected]
+            - option "20条"
+            - option "50条"
+            - option "100条"

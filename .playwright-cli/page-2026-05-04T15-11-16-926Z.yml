@@ -1,0 +1,65 @@
+- generic [ref=e20]:
+  - navigation [ref=e21]:
+    - generic [ref=e22]:
+      - button "仪表板" [ref=e23] [cursor=pointer]
+      - button "测试管理" [ref=e24] [cursor=pointer]
+      - button "调度配置" [ref=e25] [cursor=pointer]
+      - button "用户配置" [active] [ref=e26] [cursor=pointer]
+    - generic [ref=e27]:
+      - generic [ref=e28]: admin
+      - button "退出登录" [ref=e29] [cursor=pointer]
+  - generic [ref=e147]:
+    - generic [ref=e148]:
+      - heading "用户配置" [level=2] [ref=e445]
+      - button "+ 创建用户" [ref=e446] [cursor=pointer]:
+        - generic [ref=e151]: +
+        - generic [ref=e152]: 创建用户
+    - generic [ref=e447]:
+      - heading "用户 (2)" [level=2] [ref=e448]
+      - textbox "搜索用户名或邮箱..." [ref=e450]
+      - table [ref=e452]:
+        - rowgroup [ref=e453]:
+          - row "用户名 邮箱 角色 状态 创建时间 操作" [ref=e454]:
+            - columnheader "用户名" [ref=e455]
+            - columnheader "邮箱" [ref=e456]
+            - columnheader "角色" [ref=e457]
+            - columnheader "状态" [ref=e458]
+            - columnheader "创建时间" [ref=e459]
+            - columnheader "操作" [ref=e460]
+        - rowgroup [ref=e461]:
+          - row "admin admin@example.com 无角色 ●活跃 2026/5/3 编辑用户 停用用户 删除用户" [ref=e462]:
+            - cell "admin" [ref=e463]:
+              - generic [ref=e464]: admin
+            - cell "admin@example.com" [ref=e465]:
+              - generic [ref=e466]: admin@example.com
+            - cell "无角色" [ref=e467]:
+              - generic [ref=e469]: 无角色
+            - cell "●活跃" [ref=e470]:
+              - generic [ref=e471]: ●活跃
+            - cell "2026/5/3" [ref=e472]
+            - cell "编辑用户 停用用户 删除用户" [ref=e473]:
+              - generic [ref=e474]:
+                - button "编辑用户" [ref=e475] [cursor=pointer]:
+                  - img [ref=e476]
+                - button "停用用户" [ref=e478] [cursor=pointer]:
+                  - img [ref=e479]
+                - button "删除用户" [ref=e481] [cursor=pointer]:
+                  - img [ref=e482]
+          - row "adminadmin qsfan@qq.com 无角色 ●停用 2026/5/4 编辑用户 激活用户 删除用户" [ref=e484]:
+            - cell "adminadmin" [ref=e485]:
+              - generic [ref=e486]: adminadmin
+            - cell "qsfan@qq.com" [ref=e487]:
+              - generic [ref=e488]: qsfan@qq.com
+            - cell "无角色" [ref=e489]:
+              - generic [ref=e491]: 无角色
+            - cell "●停用" [ref=e492]:
+              - generic [ref=e493]: ●停用
+            - cell "2026/5/4" [ref=e494]
+            - cell "编辑用户 激活用户 删除用户" [ref=e495]:
+              - generic [ref=e496]:
+                - button "编辑用户" [ref=e497] [cursor=pointer]:
+                  - img [ref=e498]
+                - button "激活用户" [ref=e500] [cursor=pointer]:
+                  - img [ref=e501]
+                - button "删除用户" [ref=e503] [cursor=pointer]:
+                  - img [ref=e504]

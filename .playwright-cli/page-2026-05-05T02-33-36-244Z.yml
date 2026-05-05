@@ -1,0 +1,16 @@
+- generic [ref=e1015]:
+  - generic [ref=e1016]:
+    - heading "Claude Code Test Runner" [level=1] [ref=e1017]
+    - paragraph [ref=e1018]: Sign in to your account
+  - button "Local Account" [ref=e1020] [cursor=pointer]
+  - generic [ref=e1021]:
+    - generic [ref=e1022]:
+      - generic [ref=e1023]: Username
+      - textbox "Username" [ref=e1024]:
+        - /placeholder: Enter your username
+    - generic [ref=e1025]:
+      - generic [ref=e1026]: Password
+      - textbox "Password" [ref=e1027]:
+        - /placeholder: Enter your password
+    - button "Sign In" [ref=e1028] [cursor=pointer]
+  - paragraph [ref=e1030]: Admin users can view all data. Regular users can only view their own data.

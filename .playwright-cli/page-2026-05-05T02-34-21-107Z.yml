@@ -1,0 +1,48 @@
+- generic [ref=e1032]:
+  - navigation [ref=e1033]:
+    - generic [ref=e1034]:
+      - button "仪表板" [ref=e1035] [cursor=pointer]
+      - button "测试管理" [ref=e1036] [cursor=pointer]
+      - button "调度配置" [active] [ref=e1037] [cursor=pointer]
+      - button "用户配置" [ref=e1038] [cursor=pointer]
+      - button "SSO 配置" [ref=e1039] [cursor=pointer]
+    - generic [ref=e1040]:
+      - generic [ref=e1041]: admin
+      - button "退出登录" [ref=e1042] [cursor=pointer]
+  - generic [ref=e1275]:
+    - generic [ref=e1276]:
+      - heading "调度配置" [level=2] [ref=e1405]
+      - button "+ 创建调度" [ref=e1406] [cursor=pointer]:
+        - generic [ref=e1279]: +
+        - generic [ref=e1280]: 创建调度
+    - generic [ref=e1407]:
+      - heading "调度列表" [level=2] [ref=e1408]
+      - table [ref=e1410]:
+        - rowgroup [ref=e1411]:
+          - row "名称 状态 Cron 时区 下次运行 操作" [ref=e1412]:
+            - columnheader "名称" [ref=e1413]
+            - columnheader "状态" [ref=e1414]
+            - columnheader "Cron" [ref=e1415]
+            - columnheader "时区" [ref=e1416]
+            - columnheader "下次运行" [ref=e1417]
+            - columnheader "操作" [ref=e1418]
+        - rowgroup [ref=e1419]:
+          - row "test ●禁用 * * * * * Asia/Shanghai 2026/5/3 23:13:00 立即触发调度 启用调度 编辑调度 删除调度" [ref=e1420]:
+            - cell "test" [ref=e1421]:
+              - generic [ref=e1422]: test
+            - cell "●禁用" [ref=e1423]:
+              - generic [ref=e1424]: ●禁用
+            - cell "* * * * *" [ref=e1425]:
+              - code [ref=e1426]: "* * * * *"
+            - cell "Asia/Shanghai" [ref=e1427]
+            - cell "2026/5/3 23:13:00" [ref=e1428]
+            - cell "立即触发调度 启用调度 编辑调度 删除调度" [ref=e1429]:
+              - generic [ref=e1430]:
+                - button "立即触发调度" [ref=e1431] [cursor=pointer]:
+                  - img [ref=e1432]
+                - button "启用调度" [ref=e1434] [cursor=pointer]:
+                  - img [ref=e1435]
+                - button "编辑调度" [ref=e1437] [cursor=pointer]:
+                  - img [ref=e1438]
+                - button "删除调度" [ref=e1440] [cursor=pointer]:
+                  - img [ref=e1441]

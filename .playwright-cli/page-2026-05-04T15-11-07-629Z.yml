@@ -1,0 +1,47 @@
+- generic [ref=e20]:
+  - navigation [ref=e21]:
+    - generic [ref=e22]:
+      - button "仪表板" [ref=e23] [cursor=pointer]
+      - button "测试管理" [ref=e24] [cursor=pointer]
+      - button "调度配置" [active] [ref=e25] [cursor=pointer]
+      - button "用户配置" [ref=e26] [cursor=pointer]
+    - generic [ref=e27]:
+      - generic [ref=e28]: admin
+      - button "退出登录" [ref=e29] [cursor=pointer]
+  - generic [ref=e147]:
+    - generic [ref=e148]:
+      - heading "调度配置" [level=2] [ref=e407]
+      - button "+ 创建调度" [ref=e408] [cursor=pointer]:
+        - generic [ref=e151]: +
+        - generic [ref=e152]: 创建调度
+    - generic [ref=e409]:
+      - heading "调度列表" [level=2] [ref=e410]
+      - table [ref=e412]:
+        - rowgroup [ref=e413]:
+          - row "名称 状态 Cron 时区 下次运行 操作" [ref=e414]:
+            - columnheader "名称" [ref=e415]
+            - columnheader "状态" [ref=e416]
+            - columnheader "Cron" [ref=e417]
+            - columnheader "时区" [ref=e418]
+            - columnheader "下次运行" [ref=e419]
+            - columnheader "操作" [ref=e420]
+        - rowgroup [ref=e421]:
+          - row "test ●禁用 * * * * * Asia/Shanghai 2026/5/3 23:13:00 立即触发调度 启用调度 编辑调度 删除调度" [ref=e422]:
+            - cell "test" [ref=e423]:
+              - generic [ref=e424]: test
+            - cell "●禁用" [ref=e425]:
+              - generic [ref=e426]: ●禁用
+            - cell "* * * * *" [ref=e427]:
+              - code [ref=e428]: "* * * * *"
+            - cell "Asia/Shanghai" [ref=e429]
+            - cell "2026/5/3 23:13:00" [ref=e430]
+            - cell "立即触发调度 启用调度 编辑调度 删除调度" [ref=e431]:
+              - generic [ref=e432]:
+                - button "立即触发调度" [ref=e433] [cursor=pointer]:
+                  - img [ref=e434]
+                - button "启用调度" [ref=e436] [cursor=pointer]:
+                  - img [ref=e437]
+                - button "编辑调度" [ref=e439] [cursor=pointer]:
+                  - img [ref=e440]
+                - button "删除调度" [ref=e442] [cursor=pointer]:
+                  - img [ref=e443]
