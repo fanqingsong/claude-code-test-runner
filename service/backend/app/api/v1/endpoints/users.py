@@ -36,21 +36,22 @@ async def list_users(
     """
     List all users.
 
-    Requires authentication.
+    Requires authentication. Admin users can list all users.
+    Regular users can only see themselves.
     """
-    if not current_user.has_permission("read:user"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to read users",
+    # Admin users can list all users
+    if current_user.is_admin:
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.roles).selectinload(Role.permissions))
+            .offset(skip)
+            .limit(limit)
         )
+        users = result.scalars().all()
+    else:
+        # Regular users can only see themselves
+        return [current_user]
 
-    result = await db.execute(
-        select(User)
-        .options(selectinload(User.roles).selectinload(Role.permissions))
-        .offset(skip)
-        .limit(limit)
-    )
-    users = result.scalars().all()
     return users
 
 

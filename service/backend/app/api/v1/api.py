@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     jobs,
     test_suites,
     test_generation,
+    sso_config,
 )
 
 api_router = APIRouter()
@@ -33,6 +34,13 @@ api_router.include_router(
 api_router.include_router(
     users.router,
     tags=["users"]
+)
+
+# SSO configuration endpoints
+api_router.include_router(
+    sso_config.router,
+    prefix="/sso",
+    tags=["sso-config"]
 )
 
 # Test case management endpoints

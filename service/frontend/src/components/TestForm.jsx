@@ -180,6 +180,7 @@ function TestForm(props) {
   const [envValue, setEnvValue] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Load test data when editing
   useEffect(() => {
@@ -218,24 +219,33 @@ function TestForm(props) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear previous errors
+    setValidationErrors({});
+
     // Validation
+    const errors = {};
+
     if (!formData.name.trim()) {
-      alert('Test name is required');
-      return;
+      errors.name = 'Test name is required';
     }
+
     if (!formData.url.trim()) {
-      alert('URL is required');
-      return;
+      errors.url = 'URL is required';
     }
+
     if (formData.test_steps.length === 0) {
-      alert('At least one test step is required');
-      return;
+      errors.steps = 'At least one test step is required';
     }
 
     // Validate that all steps have non-empty descriptions
     const emptyStepIndex = formData.test_steps.findIndex(step => !step.description || step.description.trim() === '');
     if (emptyStepIndex !== -1) {
-      alert(`Step ${emptyStepIndex + 1} cannot be empty. Please provide a description for each step.`);
+      errors.steps = `Step ${emptyStepIndex + 1} cannot be empty. Please provide a description for each step.`;
+    }
+
+    // If there are validation errors, display them and stop submission
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
@@ -342,8 +352,8 @@ function TestForm(props) {
             style={{
               width: '100%',
               padding: '0 16px',
-              border: 'none',
-              borderBottom: '2px solid transparent',
+              border: validationErrors.name ? '2px solid var(--cds-support-error)' : 'none',
+              borderBottom: validationErrors.name ? '2px solid var(--cds-support-error)' : '2px solid transparent',
               borderRadius: 'var(--cds-border-radius)',
               background: 'var(--cds-input-background)',
               height: 'var(--cds-input-height)',
@@ -352,6 +362,11 @@ function TestForm(props) {
               fontFamily: 'var(--cds-font-family)'
             }}
           />
+          {validationErrors.name && (
+            <div style={{color: 'var(--cds-support-error)', fontSize: 'var(--cds-label-01)', marginTop: 'var(--cds-spacing-xs)'}}>
+              {validationErrors.name}
+            </div>
+          )}
         </div>
 
         <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
@@ -415,8 +430,8 @@ function TestForm(props) {
             style={{
               width: '100%',
               padding: '0 16px',
-              border: 'none',
-              borderBottom: '2px solid transparent',
+              border: validationErrors.url ? '2px solid var(--cds-support-error)' : 'none',
+              borderBottom: validationErrors.url ? '2px solid var(--cds-support-error)' : '2px solid transparent',
               borderRadius: 'var(--cds-border-radius)',
               background: 'var(--cds-input-background)',
               height: 'var(--cds-input-height)',
@@ -425,6 +440,11 @@ function TestForm(props) {
               fontFamily: 'var(--cds-font-family)'
             }}
           />
+          {validationErrors.url && (
+            <div style={{color: 'var(--cds-support-error)', fontSize: 'var(--cds-label-01)', marginTop: 'var(--cds-spacing-xs)'}}>
+              {validationErrors.url}
+            </div>
+          )}
         </div>
 
         <div style={{marginBottom: 'var(--cds-spacing-lg)'}}>
@@ -571,6 +591,11 @@ function TestForm(props) {
         </div>
 
         <StepEditor steps={formData.test_steps} onChange={(steps) => setFormData({...formData, test_steps: steps})} />
+        {validationErrors.steps && (
+          <div style={{color: 'var(--cds-support-error)', fontSize: 'var(--cds-label-01)', marginTop: 'var(--cds-spacing-xs)', marginBottom: 'var(--cds-spacing-md)'}}>
+            {validationErrors.steps}
+          </div>
+        )}
 
         <div style={{display: 'flex', gap: 'var(--cds-spacing-sm)', marginTop: 'var(--cds-spacing-lg)'}}>
           <button

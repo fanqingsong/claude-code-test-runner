@@ -19,6 +19,7 @@ window.__API_TEST_API__ = `${BASE_URL}/api/v1`;
 const TEST_API = `${BASE_URL}/api/v1`;
 const DASHBOARD_API = `${BASE_URL}/api/v1/analytics`;
 const SCHEDULER_API = `${BASE_URL}/api/v1`;
+const USERS_API = `${BASE_URL}/api/v1`;
 
 // Import authService for authentication
 import authService from './services/authService';
@@ -311,6 +312,114 @@ export const getTestStats = async () => {
     return response.json();
   } catch (error) {
     console.error('Error fetching test stats:', error);
+    throw error;
+  }
+};
+
+export const getUsers = async () => {
+  try {
+    const response = await fetch(`${USERS_API}/users`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch users: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+export const updateUser = async (userId, userData) => {
+  try {
+    const response = await fetch(`${USERS_API}/users/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(userData)
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update user: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+};
+
+export const listSSOConfigs = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/v1/sso/config`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch SSO configs: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching SSO configs:", error);
+    throw error;
+  }
+};
+
+export const createSSOConfig = async (configData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/v1/sso/config`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(configData),
+      mode: "cors"
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to create SSO config: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error creating SSO config:", error);
+    throw error;
+  }
+};
+
+export const updateSSOConfig = async (configId, configData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/v1/sso/config/${configId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(configData),
+      mode: "cors"
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update SSO config: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error updating SSO config:", error);
+    throw error;
+  }
+};
+
+export const deleteSSOConfig = async (configId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/v1/sso/config/${configId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    if (!response.ok && response.status !== 204) {
+      throw new Error(`Failed to delete SSO config: ${response.statusText}`);
+    }
+    return response.status === 204;
+  } catch (error) {
+    console.error("Error deleting SSO config:", error);
     throw error;
   }
 };

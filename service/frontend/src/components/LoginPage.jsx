@@ -30,6 +30,23 @@ function LoginPage() {
 
   const handleLocalLogin = async (e) => {
     e.preventDefault();
+
+    // Prevent rapid double-submit
+    if (loading) {
+      return;
+    }
+
+    // Validate form inputs
+    if (!formData.username.trim()) {
+      setError('Please enter your username');
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      setError('Please enter your password');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -46,6 +63,12 @@ function LoginPage() {
 
   const handleCasdoorLogin = async (e) => {
     e.preventDefault();
+
+    // Prevent rapid double-submit
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -61,6 +84,11 @@ function LoginPage() {
   };
 
   const handleOidcLogin = async () => {
+    // Prevent rapid double-submit
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -101,7 +129,7 @@ function LoginPage() {
 
         {/* Local Login Form */}
         {activeTab === 'local' && (
-          <form className="login-form" onSubmit={handleLocalLogin}>
+          <form className="login-form" onSubmit={handleLocalLogin} noValidate>
             <div className="form-group">
               <label htmlFor="local-username">Username</label>
               <input

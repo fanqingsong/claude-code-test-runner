@@ -11,6 +11,7 @@ import ScheduleList from './components/ScheduleList';
 import ScheduleForm from './components/ScheduleForm';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
+import SSOManagement from './components/SSOManagement';
 import Modal from './components/Modal';
 import authService from './services/authService';
 
@@ -56,7 +57,7 @@ function AppContent() {
   // 从hash初始化视图
   useEffect(() => {
     const hash = window.location.hash.slice(1); // 去掉#号
-    if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users') {
+    if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users' || hash === 'sso') {
       setCurrentView(hash);
     }
   }, []);
@@ -65,7 +66,7 @@ function AppContent() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users') {
+      if (hash === 'tests' || hash === 'dashboard' || hash === 'schedules' || hash === 'users' || hash === 'sso') {
         setCurrentView(hash);
       }
     };
@@ -277,12 +278,20 @@ function AppContent() {
             调度配置
           </button>
           {isAdmin && (
-            <button
-              onClick={() => window.location.hash = 'users'}
-              style={navButtonStyle(currentView === 'users')}
-            >
-              用户配置
-            </button>
+            <>
+              <button
+                onClick={() => window.location.hash = 'users'}
+                style={navButtonStyle(currentView === 'users')}
+              >
+                用户配置
+              </button>
+              <button
+                onClick={() => window.location.hash = 'sso'}
+                style={navButtonStyle(currentView === 'sso')}
+              >
+                SSO 配置
+              </button>
+            </>
           )}
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
@@ -310,6 +319,8 @@ function AppContent() {
       <div>
         {currentView === 'dashboard' ? (
           <DashboardView />
+        ) : currentView === 'sso' ? (
+          <SSOManagement />
         ) : currentView === 'users' ? (
           <div style={{padding: 'var(--cds-layout-sm)', background: 'var(--cds-background)'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--cds-layout-md)'}}>

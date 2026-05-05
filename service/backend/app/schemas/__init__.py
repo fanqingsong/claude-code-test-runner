@@ -26,6 +26,12 @@ from app.schemas.schedules import (
     SchedulePresetsResponse,
     ScheduleTriggerResponse,
 )
+from app.schemas.sso_config import (
+    SSOConfigCreate,
+    SSOConfigUpdate,
+    SSOConfigResponse,
+    SSOConfigListResponse,
+)
 
 __all__ = [
     "TestDefinitionCreate",
@@ -48,4 +54,8 @@ __all__ = [
     "SchedulePreset",
     "SchedulePresetsResponse",
     "ScheduleTriggerResponse",
+    "SSOConfigCreate",
+    "SSOConfigUpdate",
+    "SSOConfigResponse",
+    "SSOConfigListResponse",
 ]
