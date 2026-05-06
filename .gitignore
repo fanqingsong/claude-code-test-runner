@@ -176,3 +176,8 @@ wheels/
 htmlcov/
 *.cover
 .hypothesis/
+
+# Virtual environments
+venv/
+.venv/
+

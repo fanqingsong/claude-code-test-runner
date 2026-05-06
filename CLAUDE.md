@@ -31,6 +31,8 @@ Frontend (React/Vite) → Nginx (Port 8080) → Test Case API (FastAPI :8001)
                                     Scheduler API (FastAPI :8002)
                                         ↓
                     PostgreSQL (Port 5432) ← Celery Workers ← Redis Queue
+                                        ↑
+                                    Auth Service (FastAPI :8010)
 ```
 
 **Service Interactions:**
@@ -38,6 +40,7 @@ Frontend (React/Vite) → Nginx (Port 8080) → Test Case API (FastAPI :8001)
 - Scheduler Service creates test runs and coordinates execution
 - Celery Workers execute tests using Playwright and save results to PostgreSQL
 - Dashboard Service queries PostgreSQL for analytics and visualization
+- **Authentication Service** manages user authentication, MFA, password reset, and session management
 - Frontend uses hash-based routing: `#dashboard`, `#tests`, `#schedules`
 
 ## Development Commands
@@ -195,6 +198,45 @@ The existing UI components were built using Material Design patterns and need to
 - `src/server.js`: Express server with API routes
 - `frontend/src/`: React frontend
 
+**Authentication Service (FastAPI):**
+- `app/api/v1/endpoints/`: REST endpoints (auth.py, mfa.py, password.py, admin.py)
+- `app/services/`: Business logic (auth_service.py, mfa_service.py, session_service.py, audit_service.py)
+- `app/models/`: SQLAlchemy ORM models (user_account.py, user_session.py, mfa_secret.py, recovery_code.py, email_token.py, audit_log.py)
+- `app/tasks/`: Celery tasks (email_tasks.py, maintenance_tasks.py)
+- `app/core/`: Configuration and security (config.py, security.py, rate_limit.py, celery_app.py)
+
+**Authentication Flow:**
+1. **Registration:** User submits email/password → AuthService.register_user() → creates user_account → queues verification email via Celery
+2. **Email Verification:** User clicks email link → token validation → user_account.is_verified = True
+3. **Login:** User submits credentials → AuthService.authenticate_user() → validates password → creates user_session → returns JWT tokens
+4. **MFA Setup:** Authenticated user requests setup → MFAService.setup_mfa() → generates TOTP secret + QR code + 10 backup codes
+5. **MFA Enable:** User verifies TOTP code → MFAService.enable_mfa() → marks MFA enabled
+6. **Password Reset:** User requests reset → generates token → emails link → token validation → password update → invalidate all sessions
+
+**Security Architecture:**
+- **Rate Limiting:** Sliding window using Redis sorted sets (5 login attempts/15min, 3 password resets/hour, 10 MFA verifications/5min)
+- **Account Lockout:** 5 failed login attempts triggers 15-minute lock (user_account.failed_login_attempts, account_locked_until)
+- **Session Management:** Max 5 concurrent sessions, oldest inactive terminated on 6th (session_service.create_user_session())
+- **MFA:** TOTP secrets (160-bit Base32), 10 single-use backup codes (bcrypt hashed), 30-second window with ±1 step skew tolerance
+- **Audit Logging:** All security events logged to audit_logs table with IP address, user agent, auto-deletion after 90 days
+- **Email Queue:** Celery tasks with exponential backoff retry (30s, 5m, 15m), failure tracking after 3 attempts
+
+**Critical Authentication Service Methods:**
+- `AuthService.register_user()`: Creates user, validates password strength, queues verification email
+- `AuthService.authenticate_user()`: Validates credentials, checks account status, enforces lockout, tracks failed attempts
+- `SessionService.create_user_session()`: Creates session, enforces concurrent limit, sets remember_me expiry (30 days vs 24 hours)
+- `MFAService.setup_mfa()`: Generates TOTP secret (pyotp), QR code (otpauth URI), 10 backup codes (bcrypt hashed)
+- `MFAService.verify_mfa()`: Validates TOTP code with ±1 step tolerance, updates last_verified_at
+- `AuditService.log_security_event()`: Logs security events with IP, user agent, details, 90-day retention
+
+**Authentication Database Schema:**
+- `user_accounts`: id, email, password_hash (bcrypt), is_verified, status (active/suspended), failed_login_attempts, account_locked_until, mfa_enabled
+- `user_sessions`: id, user_id, session_token, ip_address, user_agent, expires_at, remember_me, created_at, last_active
+- `mfa_secrets`: id, user_id, secret (bcrypt), enabled, verified_at, last_verified_at
+- `recovery_codes`: id, user_id, code (bcrypt), used_at, created_at
+- `email_tokens`: id, user_id, token (SHA256 hash), token_type (verification/password_reset), expires_at, used_at
+- `audit_logs`: id, user_id, event_type, details (JSON), ip_address, user_agent, created_at, auto_delete_at
+
 **Critical Service Methods:**
 - `ExecutionService.save_test_results()`: Saves both test_runs summary AND test_cases details
 - `ScheduleManager.parse_cron_expression()`: Validates cron expressions
@@ -270,9 +312,16 @@ The existing UI components were built using Material Design patterns and need to
 ## API Port Mappings
 
 - **8080:** Nginx reverse proxy (routes to backend services)
+- **8010:** Authentication Service (FastAPI)
 - **8011:** Test Case Service (FastAPI)
 - **8012:** Scheduler Service (FastAPI)
 - **8013:** Dashboard Service (Express + Vite)
 - **5173:** Vite dev server (for React frontend hot-reload)
 - **5433:** PostgreSQL (external access)
 - **6380:** Redis (external access)
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan:
+specs/001-user-auth-mfa/plan.md
+<!-- SPECKIT END -->

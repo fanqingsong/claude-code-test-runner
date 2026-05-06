@@ -230,6 +230,129 @@ This container can be used directly in GitHub actions, as demonstrated [here](.g
 
 IMPORTANT: you must provide either an OAuth token or API key via the `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` env vars.
 
+## Authentication Service
+
+This project includes a comprehensive authentication microservice with email/password registration, MFA support, password reset, and administrative features.
+
+### Features
+
+- **Email/Password Authentication**: User registration with email verification
+- **Multi-Factor Authentication (MFA)**: TOTP-based authenticator app support with 10 backup codes
+- **Password Reset**: Email-based password recovery with time-limited tokens
+- **Session Management**: Concurrent session limits, remember-me functionality, and session termination
+- **Admin Controls**: Account suspension and reactivation with audit logging
+- **Security Hardening**: Rate limiting, account lockout, security headers, and comprehensive audit logging
+- **Accessibility**: WCAG 2.1 Level AA compliant authentication forms
+
+### Architecture
+
+The authentication service is a FastAPI-based microservice that integrates with the existing infrastructure:
+
+```
+Frontend → Nginx → Auth Service (Port 8010)
+                ↓
+            PostgreSQL (user_accounts, user_sessions, mfa_secrets, etc.)
+                ↓
+            Redis (rate limiting, session cache)
+                ↓
+            Celery Workers (email queue, maintenance jobs)
+```
+
+### Database Schema
+
+The authentication service uses these core tables:
+- `user_accounts`: User credentials, verification status, suspension state
+- `user_sessions`: Active sessions with device tracking
+- `mfa_secrets`: TOTP secrets and MFA status
+- `recovery_codes`: One-time backup codes for MFA recovery
+- `email_tokens`: Verification and password reset tokens
+- `audit_logs`: Security event logging with 90-day retention
+
+### Quick Start
+
+1. **Start the services:**
+   ```bash
+   cd service/docker-compose
+   docker-compose up -d postgres redis auth-service auth-service-worker auth-service-beat
+   ```
+
+2. **Run database migrations:**
+   ```bash
+   docker-compose exec auth-service alembic upgrade head
+   ```
+
+3. **Configure environment variables:**
+   ```bash
+   cp service/auth-service/.env.example service/auth-service/.env
+   # Edit .env with your SMTP settings and secrets
+   ```
+
+4. **Access the API:**
+   - API Documentation: http://localhost:8010/docs
+   - Health Check: http://localhost:8010/health
+
+### API Endpoints
+
+**Authentication:**
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/verify-email` - Email verification
+- `POST /api/v1/auth/login` - User login
+- `POST /api/v1/auth/logout` - User logout
+
+**MFA:**
+- `POST /api/v1/auth/mfa/setup` - Initiate MFA setup
+- `POST /api/v1/auth/mfa/enable` - Enable MFA with verification
+- `POST /api/v1/auth/mfa/disable` - Disable MFA
+- `POST /api/v1/auth/mfa/verify` - Verify MFA code during login
+
+**Password Management:**
+- `POST /api/v1/auth/password/reset` - Request password reset
+- `POST /api/v1/auth/password/reset/confirm` - Confirm password reset
+- `POST /api/v1/auth/password/change` - Change password (authenticated)
+
+**Session Management:**
+- `GET /api/v1/auth/sessions` - List active sessions
+- `DELETE /api/v1/auth/sessions` - Terminate session
+
+**Admin (requires admin role):**
+- `POST /api/v1/admin/users/{user_id}/suspend` - Suspend account
+- `POST /api/v1/admin/users/{user_id}/reactivate` - Reactivate account
+
+### Security Features
+
+- **Rate Limiting**: Sliding window rate limiting on all authentication endpoints
+- **Account Lockout**: 5 failed login attempts trigger 15-minute lockout
+- **Session Limits**: Maximum 5 concurrent sessions per user
+- **Password Requirements**: 8+ characters, mixed case, numbers, special characters
+- **MFA Enforcement**: Optional TOTP-based multi-factor authentication
+- **Security Headers**: HSTS, X-Content-Type-Options, X-Frame-Options, CSP
+- **Audit Logging**: All security events logged with IP address and user agent
+
+### Production Deployment
+
+For production deployment, use the production Dockerfile:
+
+```bash
+# Build production image
+docker build -f service/auth-service/Dockerfile.prod -t auth-service:prod service/auth-service/
+
+# Run with production settings
+docker run -d \
+  --name auth-service \
+  -p 8010:8010 \
+  --env-file service/auth-service/.env.production \
+  auth-service:prod
+```
+
+See `service/auth-service/.env.production.example` for required environment variables.
+
+### Monitoring and Maintenance
+
+- **Health Check**: `GET /health` returns service status
+- **Email Queue**: Monitored via Celery worker logs
+- **Audit Logs**: Automatic cleanup after 90 days
+- **Session Cleanup**: Expired sessions removed every 6 hours
+
 ### Debugging and logs
 
 The results directory for each test run contains the following:

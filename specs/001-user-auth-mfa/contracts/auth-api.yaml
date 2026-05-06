@@ -1,0 +1,616 @@
+openapi: 3.0.3
+info:
+  title: Authentication Service API
+  description: REST API for user authentication, MFA, password reset, and session management
+  version: 1.0.0
+  contact:
+    name: Claude Code Test Runner Team
+
+servers:
+  - url: http://localhost:8010/api/v1
+    description: Local development
+  - url: https://api.example.com/api/v1
+    description: Production
+
+tags:
+  - name: Authentication
+    description: User registration, login, logout
+  - name: MFA
+    description: Multi-factor authentication
+  - name: Password
+    description: Password reset and change
+  - name: Sessions
+    description: Session management
+  - name: Admin
+    description: Administrative functions
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Create a new user account with email and password. Sends verification email.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/EmailExists'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/verify-email:
+    post:
+      tags: [Authentication]
+      summary: Verify email address
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '400':
+          $ref: '#/components/responses/InvalidToken'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user with email and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: HTTP-only refresh token cookie
+              schema:
+                type: string
+                example: refresh_token=xyz123; HttpOnly; Secure; Path=/; Max-Age=2592000; SameSite=Strict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '403':
+          $ref: '#/components/responses/AccountForbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/mfa/verify:
+    post:
+      tags: [MFA]
+      summary: Verify MFA code during login
+      operationId: verifyMFA
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAVerificationRequest'
+      responses:
+        '200':
+          description: MFA verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/InvalidMFA'
+
+  /auth/mfa/setup:
+    post:
+      tags: [MFA]
+      summary: Initiate MFA setup
+      operationId: setupMFA
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: MFA setup initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFASetupResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/mfa/enable:
+    post:
+      tags: [MFA]
+      summary: Enable MFA
+      operationId: enableMFA
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAEnableRequest'
+      responses:
+        '200':
+          description: MFA enabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAEnabledResponse'
+        '401':
+          $ref: '#/components/responses/InvalidMFA'
+
+  /auth/mfa/disable:
+    post:
+      tags: [MFA]
+      summary: Disable MFA
+      operationId: disableMFA
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordConfirmationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '401':
+          $ref: '#/components/responses/InvalidPassword'
+
+  /auth/password/reset:
+    post:
+      tags: [Password]
+      summary: Request password reset
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/password/reset/confirm:
+    post:
+      tags: [Password]
+      summary: Confirm password reset
+      operationId: confirmPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '400':
+          $ref: '#/components/responses/InvalidToken'
+
+  /auth/password/change:
+    post:
+      tags: [Password]
+      summary: Change password
+      operationId: changePassword
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '401':
+          $ref: '#/components/responses/InvalidPassword'
+
+  /auth/sessions:
+    get:
+      tags: [Sessions]
+      summary: List active sessions
+      operationId: listSessions
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Sessions]
+      summary: Terminate session
+      operationId: terminateSession
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout user
+      operationId: logout
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+
+  /admin/users/{user_id}/suspend:
+    post:
+      tags: [Admin]
+      summary: Suspend user account
+      operationId: suspendUser
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendUserRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+
+  /admin/users/{user_id}/reactivate:
+    post:
+      tags: [Admin]
+      summary: Reactivate user account
+      operationId: reactivateUser
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: '#/components/responses/MessageSuccess'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  schemas:
+    RegistrationRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    RegistrationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user_id:
+          type: integer
+
+    EmailVerificationRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          format: uuid
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        remember_me:
+          type: boolean
+          default: false
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        mfa_required:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/User'
+
+    MFAVerificationRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+        recovery_code:
+          type: string
+          pattern: '^[A-Z0-9]{8}$'
+
+    MFASetupResponse:
+      type: object
+      properties:
+        qr_code_url:
+          type: string
+          format: uri
+        secret:
+          type: string
+        backup_codes:
+          type: array
+          items:
+            type: string
+
+    MFAEnableRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+
+    MFAEnabledResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        backup_codes:
+          type: array
+          items:
+            type: string
+
+    PasswordConfirmationRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, new_password]
+      properties:
+        token:
+          type: string
+          format: uuid
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+
+    PasswordChangeRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          format: password
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+
+    SessionsListResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+        device:
+          type: string
+        ip_address:
+          type: string
+          format: ipv4
+        last_active:
+          type: string
+          format: date-time
+        is_current:
+          type: boolean
+
+    SuspendUserRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        is_verified:
+          type: boolean
+        mfa_enabled:
+          type: boolean
+        status:
+          type: string
+          enum: [active, suspended, admin_suspended]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    MessageSuccess:
+      description: Success
+      content:
+        application/json:
+          schema:
+            properties:
+              message:
+                type: string
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InvalidToken:
+      description: Invalid or expired token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InvalidCredentials:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    AccountForbidden:
+      description: Account suspended or unverified
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden - admin access required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UserNotFound:
+      description: User not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    EmailExists:
+      description: Email already registered
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InvalidPassword:
+      description: Invalid password
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InvalidMFA:
+      description: Invalid MFA code
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
